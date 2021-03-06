@@ -1,20 +1,48 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Excercise 2"
+subtitle: "TMA4300 Computer intensive statistical methods Spring 2021"
+author: 
+- "Johan Fredrik Agerup"
+- "Arne Rustad"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+\newcommand{\Var}{\textrm{Var}}
+\newcommand{\E}{\textrm{E}}
+\newcommand{\Cov}{\textrm{Cov}}
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
-```{r}
-library(boot)
-print("for arne")
-plot(cars)
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE,tidy=TRUE,message=FALSE,warning=FALSE,strip.white=TRUE,prompt=FALSE,
+                      cache=TRUE, size="scriptsize",fig.width=4, fig.height=3)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+```{r rpackages,eval=TRUE,echo=FALSE}
+library(ggplot2)
+# library(expm)
+# library(Matrix)
+library(dplyr)
+library(tidyverse)
+library(boot)
+```
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+# Problem A
+
+In this problem we analyze a data set of time intervals between successive coal-mining disaster in the UK involving ten or more men killed. The data is for the period March 15th 1851 to March 22nd 1962.
+
+You should note that the first and last records in this variable are the start and end dates, respectively. IS THIS TRUE???????????????????????????????????????????????????????????????????????????????????????????????????????????????
+
+First we try to get an impression of the data set by making a plot with year along the $x$-axis and the cumulative number of disasters along the $y$-axis.
+
+
+```{r, fig.cap = "\\label{fig:1a_cumplot} Cumulative umber of explosions which resulted in 10 or more fatalities. The time span is from March 15 1851 until March 22 1962."}
+df.coal = coal
+df.coal$cum.n.explosions = cumsum(rep(1, nrow(coal)))
+head(df.coal)
+ggplot(df.coal, aes(x = date, y = cum.n.explosions)) + geom_line() + ggtitle("Cumulative number of explosions (15.03.1851-22.3.1962)") + xlab("Year") + ylab("Cumlative number of explosions") + geom_vline(xintercept = c(1890,1930))
+?
+```
+
+From Figure \ref{fig:1a_cumplot} the rate of accidents appear approximately constant from year 1850 until around 1890. Then the rate of large explosions appear to dampen a bit, perhaps due to better safety rutines, equipment, societal norms and laws or another reasson.
