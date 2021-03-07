@@ -34,6 +34,8 @@ In this problem we analyze a data set of time intervals between successive coal-
 
 You should note that the first and last records in this variable are the start and end dates, respectively. IS THIS TRUE???????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
+## 1)
+
 First we try to get an impression of the data set by making a plot with year along the $x$-axis and the cumulative number of disasters along the $y$-axis.
 
 
@@ -42,7 +44,86 @@ df.coal = coal
 df.coal$cum.n.explosions = cumsum(rep(1, nrow(coal)))
 head(df.coal)
 ggplot(df.coal, aes(x = date, y = cum.n.explosions)) + geom_line() + ggtitle("Cumulative number of explosions (15.03.1851-22.3.1962)") + xlab("Year") + ylab("Cumlative number of explosions") + geom_vline(xintercept = c(1890,1930))
-?
 ```
 
-From Figure \ref{fig:1a_cumplot} the rate of accidents appear approximately constant from year 1850 until around 1890. Then the rate of large explosions appear to dampen a bit, perhaps due to better safety rutines, equipment, societal norms and laws or another reasson.
+From Figure \ref{fig:1a_cumplot} the rate of accidents appear approximately constant from year 1850 until around 1890. Then the rate of large explosions appear to dampen a bit, perhaps due to better safety rutines, equipment, change in societal norms and laws or another reasson.
+
+## 2)
+
+To analyze the data set we adopt a hierarchical Bayesian model. Assume the coal-mining disasters to follow an inhomogeneous Poisson process with intensity function $\lambda(t)$ (number of events per year). Assume $\lambda(t)$ to be piecewise constant with $n$ breakpoints. Let $t_0$ and $t_{n+1}$ denote the start and end times for the dataset and let $t_k; \; k=1,2,\dots, n$ denote the break points of the intensity function. Thus,
+
+$$ \lambda(t) =
+\begin{cases}
+\lambda_{k-1} \; &\textrm{for } t \in [t_{k-1}, t_k] \\
+\lambda_n \; &\textrm{for } t \in [t_n, t_{n+1}]
+\end{cases}$$
+
+Thereby the parameters of the model is $t_1, \dots, t_n$ and $\lambda_0, \dots, \lambda_n$ where $t_0 < t_1 < \dots < t_n < t_{n+1}$. By subdividing the observations into short intervals and taking the limit when the length of these intervals go to zero, the likelihood function for the observed data can be derived as
+
+
+\begin{align*}
+f(x | t_1, \dots, t_n, \lambda_0, \dots, \lambda_n)
+&= e^{-\int_{t_0}^{t_{n+1}} \lambda(t) dt} \prod_{k=0}^{n} \lambda_k^{y_k} \\
+&= e^{-\sum_{k = 0}^{n} \lambda_k (t_{k+1} - t_k)} \prod_{k=0}^{n} \lambda_k^{y_k}.
+\end{align*}
+
+?????????????????????????????????? should it here be a normalizing constant as well in the equation
+
+Here $x$ is the observed data and $y_k$ is the number of observed disasters in the period $t_k$ to $t_{k+1}$. Assume $t_1, \dots, t_n$ to be apriori uniformly distributed on the allowed values and $\lambda_0, \dots, \lambda_n$ to be apriori independent of $t_1, \dots, t_n$ and apriori independent of each other. Apriori we assume all $\lambda_0, \dots, \lambda_n$ to be distributed from the same gamma distribution with shape parameter $\alpha = 2$ and scale parameter $\beta$, i.e
+
+\begin{align*}
+f(\lambda_i | \beta) = \frac{1}{\beta^2} \lambda_i e^{\frac{-\lambda_i}{\beta}} \; \textrm{for } \lambda_i \geq 0
+\end{align*}
+
+Finally, for $\beta$ we use the improper prior
+
+$$ f(\beta) \propto \frac{e^{\frac{-1}{\beta}}}{\beta} \; \textrm{for } \beta > 0$$
+
+In the following it is assumed $n = 1$, resulting in $\theta = (t_1, \lambda_0, \lambda_1, \beta)$.
+
+The posterior distribution is then
+
+\begin{align*}
+f(\theta | x) &= f(x | \theta) f(\theta) \\
+&= f(x | t_1,  \lambda_0, \lambda_1) f(t_1) f(\lambda_0 | \beta) f(\lambda_1 | \theta) f(\beta)
+\end{align*}
+
+Here it is used that $t_1, \lambda_0$ and $\lambda_1$ all are independent of each other. Inserting the expressions for the likelihood and the priors we get an expression for the posterior distribution up to a proportionality constant
+
+\begin{align*}
+f(\theta = (t_1, \lambda_0, \lambda_1, \beta) | x)
+&\propto e^{-\lambda_0 (t_{1} - t_0) - \lambda_1 (t_{2} - t_1)} \lambda_0^{y_0} \lambda_1^{y_1}
+\frac{1}{t_{2} - t_0}
+\frac{1}{\beta^2} \lambda_0 e^{\frac{-\lambda_0}{\beta}}
+\frac{1}{\beta^2} \lambda_1 e^{\frac{-\lambda_1}{\beta}}
+\frac{e^{\frac{-1}{\beta}}}{\beta} \\
+&\propto e^{-\lambda_0 (t_{1} - t_0) - \lambda_1 (t_{2} - t_1)}
+\lambda_0^{y_0} \lambda_1^{y_1}
+\frac{1}{\beta^2} \lambda_0 e^{\frac{-\lambda_0}{\beta}}
+\frac{1}{\beta^2} \lambda_1 e^{\frac{-\lambda_1}{\beta}}
+\frac{e^{\frac{-1}{\beta}}}{\beta}.
+\end{align*}
+
+## 3)
+
+Next we want to find the full conditions of $\theta$ for later use in the implementation of MCMC algorithms to find the posterior. The full conditional of $t_1$ is
+
+$$ f(t_1 | x, \lambda_0, \lambda_1, \beta) \propto e^{t_1 (\lambda_1 - \lambda_0)}.$$
+
+???????????????????????????????????+ Should $\beta$ and x be included after $|$ here?
+
+The full conditional of $t_1$ is not recognized as a known distribution???????.
+
+The full conditional of $\lambda_0$ is
+
+$$ f(\lambda_0 | x, t_1, \lambda_1, \beta) \propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})}.$$
+
+We recognize the full conditional of $\lambda_0$ as the Gamma$(y_0 + 2, \frac{1}{t_1 - t_0 + \frac{1}{\beta}})$ distribution. Similarily, the full conditional of $\lambda_1$ is
+
+$$ f(\lambda_1 | x, t_1, \lambda_0, \beta) \propto \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})}.$$
+
+From this we see that the full conditional of $\lambda_1$ is Gamma$(y_1 + 2, \frac{1}{t_2 - t_1 + \frac{1}{\beta}})$ distributed. Lastly, the expression for the full conditional of $\beta$ is
+
+$$ f(\beta | x, t_1, \lambda_0, \lambda_1) \propto  \frac{1}{\beta^5} e^{\frac{-(1 + \lambda_0 + \lambda_1)}{\beta}}.$$
+
+Here $\frac{1}{\beta}$ appear $\textrm{Gamma}(6, \frac{1}{1 + \lambda_0 + \lambda_1})$ distributed.
