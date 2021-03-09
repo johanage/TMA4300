@@ -143,3 +143,52 @@ Here $\beta$ is $\textrm{Inverse Gamma}(6, 1 + \lambda_0 + \lambda_1)$ distribut
 
 In this task we want to implement a single site MCMC algorithm for the posterior distribution $\pi(\vect{\theta} | \vect{x})$
 
+<<<<<<< HEAD
+=======
+Here $\frac{1}{\beta}$ appear $\textrm{Gamma}(6, \frac{1}{1 + \lambda_0 + \lambda_1})$ distributed.
+
+###########################
+# Exercise B:
+
+Loading the dataset from github
+```{r}
+y <- read.csv("https://raw.githubusercontent.com/johanage/TMA4300/master/Gaussian%20Data.csv")
+head(y)
+```
+
+
+Our main inferential interest lies in the posterior marginal for the smooth effect $\Pi(\eta (t)|y), t = 1, . . . , T.$
+
+1. Explain why this model is a latent Gaussian model and why it is possible to use INLA to estimate the
+parameters.
+
+A latent variable model relates a set of observable variables to a set of inferred variables. A latent Gaussian model is a model which infers a variable based on observed variables with that have a Gaussian distribution.
+
+
+2. Define and implement a block Gibbs sampling algorithm for $f(\eta, \Theta|y)$ using the following two (block)
+proposals:
+Propose a new value for $\Theta$ from the full conditional $\Pi(\Theta|\eta, y)$
+Propose a new value for the vector $\eta$ from the full conditional $\Pi(\eta|\Theta, y)$
+Use the samples to get an estimate for the posterior marginal for the hyperparameter $\Pi(\Theta|y)$
+Use the samples to get an estimate of the smooth effect using the mean and pointwise a $95\%$ confidence
+bound around the mean.
+3. We want to approximate the posterior marginal for the hyperparameter $\Theta, \Pi(\Theta|y)$ using the INLA
+scheme. We start from:
+\begin{equation}
+\Pi(\Theta|y) \propto \frac{\Pi(y|\eta, \Theta)\Pi(\eta|\Theta)\Pi(\Theta)}{\Pi(\eta|\Theta, y)}
+\end{equation}
+
+Note that since the likelihood is Gaussian then also $\Pi(\eta|\Theta, y)$ is Gaussian.
+Consider a grid of value between 0 and 6 and use 5 to construct an approximation for $\Pi(\Theta|y)$. Compare your
+result with the MCMC estimate you obtained in point 1)
+4. We now want to implement the next step in the INLA scheme, the approximation of the marginal
+posterior for the smooth effect, $\Pi(\eta_i|y)$.
+We have that:
+\begin{equation}
+\pi(\eta_i|y) = \int \pi(\eta_i|y, \Theta)\Pi(\Theta|y)d\Theta
+\end{equation}
+
+Use the grid of $\Theta$ value from point 2) to approximate the integral above for $i = 10$. Compare your approximation
+for $\Pi(\eta_i|y)$ with the estimation obtained in point 1) via Gibbs sampling.
+
+>>>>>>> ebe2e5601b3ad2436b55afc120afe54556e89e81

@@ -2,3 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+*out
+*_cache/
+Exercise-2_files/
+*.pdf
+*.html
