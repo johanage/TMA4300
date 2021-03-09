@@ -8,9 +8,12 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 ---
 
+\newcommand{\vect}[1]{\ensuremath{\boldsymbol{\mathbf{#1} }}}
+\newcommand{\matr}[1]{\ensuremath{\boldsymbol{\mathbf{#1} }}}
 \newcommand{\Var}{\textrm{Var}}
 \newcommand{\E}{\textrm{E}}
 \newcommand{\Cov}{\textrm{Cov}}
+\newcommand{\Corr}{\textrm{Corr}}
 
 ```{r setup, include=FALSE}
 library(knitr)
@@ -30,23 +33,24 @@ library(boot)
 
 # Problem A
 
-In this problem we analyze a data set of time intervals between successive coal-mining disaster in the UK involving ten or more men killed. The data is for the period March 15th 1851 to March 22nd 1962.
-
-You should note that the first and last records in this variable are the start and end dates, respectively. IS THIS TRUE???????????????????????????????????????????????????????????????????????????????????????????????????????????????
+In this problem we analyze a data set of time intervals between successive coal-mining disaster in the UK involving ten or more men killed. The data is for the period March 15th 1851 to March 22nd 1962. Although the description of the dataset says that all 191 dates in the dataset are dates of explosions, to be in compliance with the exercise text, the first and last records are assumed to be start and end dates. This results in 189 observations in the time period.
 
 ## 1)
 
 First we try to get an impression of the data set by making a plot with year along the $x$-axis and the cumulative number of disasters along the $y$-axis.
 
 
-```{r, fig.cap = "\\label{fig:1a_cumplot} Cumulative umber of explosions which resulted in 10 or more fatalities. The time span is from March 15 1851 until March 22 1962."}
-df.coal = coal
-df.coal$cum.n.explosions = cumsum(rep(1, nrow(coal)))
-head(df.coal)
+```{r, fig.cap = "\\label{fig:1a_cumplot} Cumulative number of explosions which resulted in 10 or more fatalities. The time span is from March 15 1851 until March 22 1962."}
+df.coal = coal # Get the data into a new data frame variable
+
+# add cumulative number of explosions at each time
+df.coal$cum.n.explosions = c(1, cumsum(rep(1, nrow(coal)-2)), nrow(coal)-2)
+
+# plot the cumulative number of explosions as a function of time
 ggplot(df.coal, aes(x = date, y = cum.n.explosions)) + geom_line() + ggtitle("Cumulative number of explosions (15.03.1851-22.3.1962)") + xlab("Year") + ylab("Cumlative number of explosions") + geom_vline(xintercept = c(1890,1930))
 ```
 
-From Figure \ref{fig:1a_cumplot} the rate of accidents appear approximately constant from year 1850 until around 1890. Then the rate of large explosions appear to dampen a bit, perhaps due to better safety rutines, equipment, change in societal norms and laws or another reasson.
+From Figure \ref{fig:1a_cumplot} the rate of accidents appear approximately constant from year 1850 until around 1890. Then the rate of large explosions appear to dampen a bit, perhaps due to better safety rutines, better equipment, change in societal norms and laws or another reason.
 
 ## 2)
 
@@ -62,7 +66,7 @@ Thereby the parameters of the model is $t_1, \dots, t_n$ and $\lambda_0, \dots, 
 
 
 \begin{align*}
-f(x | t_1, \dots, t_n, \lambda_0, \dots, \lambda_n)
+\pi (x | t_1, \dots, t_n, \lambda_0, \dots, \lambda_n)
 &= e^{-\int_{t_0}^{t_{n+1}} \lambda(t) dt} \prod_{k=0}^{n} \lambda_k^{y_k} \\
 &= e^{-\sum_{k = 0}^{n} \lambda_k (t_{k+1} - t_k)} \prod_{k=0}^{n} \lambda_k^{y_k}.
 \end{align*}
@@ -72,26 +76,26 @@ f(x | t_1, \dots, t_n, \lambda_0, \dots, \lambda_n)
 Here $x$ is the observed data and $y_k$ is the number of observed disasters in the period $t_k$ to $t_{k+1}$. Assume $t_1, \dots, t_n$ to be apriori uniformly distributed on the allowed values and $\lambda_0, \dots, \lambda_n$ to be apriori independent of $t_1, \dots, t_n$ and apriori independent of each other. Apriori we assume all $\lambda_0, \dots, \lambda_n$ to be distributed from the same gamma distribution with shape parameter $\alpha = 2$ and scale parameter $\beta$, i.e
 
 \begin{align*}
-f(\lambda_i | \beta) = \frac{1}{\beta^2} \lambda_i e^{\frac{-\lambda_i}{\beta}} \; \textrm{for } \lambda_i \geq 0
+\pi (\lambda_i | \beta) = \frac{1}{\beta^2} \lambda_i e^{\frac{-\lambda_i}{\beta}} \; \textrm{for } \lambda_i \geq 0
 \end{align*}
 
 Finally, for $\beta$ we use the improper prior
 
-$$ f(\beta) \propto \frac{e^{\frac{-1}{\beta}}}{\beta} \; \textrm{for } \beta > 0$$
+$$ \pi(\beta) \propto \frac{e^{\frac{-1}{\beta}}}{\beta} \; \textrm{for } \beta > 0$$
 
-In the following it is assumed $n = 1$, resulting in $\theta = (t_1, \lambda_0, \lambda_1, \beta)$.
+In the following it is assumed $n = 1$, resulting in $\vect{\theta} = (t_1, \lambda_0, \lambda_1, \beta)$.
 
 The posterior distribution is then
 
 \begin{align*}
-f(\theta | x) &= f(x | \theta) f(\theta) \\
-&= f(x | t_1,  \lambda_0, \lambda_1) f(t_1) f(\lambda_0 | \beta) f(\lambda_1 | \theta) f(\beta)
+\pi(\vect{\theta} | x) &= f(x | \vect{\theta}) \pi(\vect{\theta}) \\
+&= f(x | t_1,  \lambda_0, \lambda_1) \pi(t_1) \pi(\lambda_0 | \beta) \pi(\lambda_1 | \vect{\theta}) \pi(\beta)
 \end{align*}
 
 Here it is used that $t_1, \lambda_0$ and $\lambda_1$ all are independent of each other. Inserting the expressions for the likelihood and the priors we get an expression for the posterior distribution up to a proportionality constant
 
 \begin{align*}
-f(\theta = (t_1, \lambda_0, \lambda_1, \beta) | x)
+\pi(\vect{\theta} = (t_1, \lambda_0, \lambda_1, \beta) | x)
 &\propto e^{-\lambda_0 (t_{1} - t_0) - \lambda_1 (t_{2} - t_1)} \lambda_0^{y_0} \lambda_1^{y_1}
 \frac{1}{t_{2} - t_0}
 \frac{1}{\beta^2} \lambda_0 e^{\frac{-\lambda_0}{\beta}}
@@ -106,24 +110,36 @@ f(\theta = (t_1, \lambda_0, \lambda_1, \beta) | x)
 
 ## 3)
 
-Next we want to find the full conditions of $\theta$ for later use in the implementation of MCMC algorithms to find the posterior. The full conditional of $t_1$ is
+Next we want to find the full conditionals of $\vect{\theta}$ for later use in the implementation of MCMC algorithms to find the posterior. Let $\vect{\theta}^{-j}$ denote all of vector $\vect{\theta}$ except for the jth element, i.e $\vect{\theta}^{-j} = [\theta_1, \dots, \theta_{j-1}, \theta_{j+1}, \dots, \theta_4]$. The full conditional of element $j$ in component vector $\vect{\theta}$ is defined as
 
-$$ f(t_1 | x, \lambda_0, \lambda_1, \beta) \propto e^{t_1 (\lambda_1 - \lambda_0)}, \qquad t_1 \in [t_0, t_2].$$
+$$ \pi (\theta^j | \vect{\theta}^{-j}) = \frac{\pi(\vect{\theta )}}{\pi (\vect{\theta}^{-j})} \propto  \pi(\vect{\theta )}.$$
 
-???????????????????????????????????+ Should $\beta$ and x be included after $|$ here?
+Thus, the non-normalised conditional densities of $\theta^j | \vect{\theta}$ can be directly derived from $\pi(\vect{\theta})$ by omitting all multiplicative factors that do not depend on $\theta_j$.
+
+The full conditional of $t_1$ is
+
+$$ \pi(t_1 | x, \lambda_0, \lambda_1, \beta) \propto e^{t_1 (\lambda_1 - \lambda_0)} \lambda_0^{y_0 + 1} \lambda_1^{y_1 + 1}, \qquad t_1 \in [t_0, t_2].$$
+
+
 
 The full conditional of $t_1$ is not recognized as a known distribution???????.
 
 The full conditional of $\lambda_0$ is
 
-$$ f(\lambda_0 | x, t_1, \lambda_1, \beta) \propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})}, \qquad \lambda_2 \geq 0.$$
+$$ \pi(\lambda_0 | \vect{x}, t_1, \lambda_1, \beta) \propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})}, \qquad \lambda_2 \geq 0.$$
 
 We recognize the full conditional of $\lambda_0$ as the Gamma$(y_0 + 2, \frac{1}{t_1 - t_0 + \frac{1}{\beta}})$ distribution. Similarily, the full conditional of $\lambda_1$ is
 
-$$ f(\lambda_1 | x, t_1, \lambda_0, \beta) \propto \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})}, \qquad \lambda_1 \geq 0.$$
+$$ \pi(\lambda_1 | \vect{x}, t_1, \lambda_0, \beta) \propto \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})}, \qquad \lambda_1 \geq 0.$$
 
 From this we see that the full conditional of $\lambda_1$ is Gamma$(y_1 + 2, \frac{1}{t_2 - t_1 + \frac{1}{\beta}})$ distributed. Lastly, the expression for the full conditional of $\beta$ is
 
-$$ f(\beta | x, t_1, \lambda_0, \lambda_1) \propto  \frac{1}{\beta^5} e^{\frac{-(1 + \lambda_0 + \lambda_1)}{\beta}}, \qquad \beta >0.$$
+$$ \pi(\beta | \vect{x}, t_1, \lambda_0, \lambda_1) \propto  \frac{1}{\beta^5} e^{\frac{-(1 + \lambda_0 + \lambda_1)}{\beta}}, \qquad \beta >0.$$
 
-Here $\frac{1}{\beta}$ appear $\textrm{Gamma}(6, \frac{1}{1 + \lambda_0 + \lambda_1})$ distributed.
+Here $\beta$ is $\textrm{Inverse Gamma}(6, 1 + \lambda_0 + \lambda_1)$ distributed where the first parameter is the shape parameter and the second is the scale parameter.
+
+
+## 4)
+
+In this task we want to implement a single site MCMC algorithm for the posterior distribution $\pi(\vect{\theta} | \vect{x})$
+
