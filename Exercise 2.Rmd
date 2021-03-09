@@ -108,7 +108,7 @@ f(\theta = (t_1, \lambda_0, \lambda_1, \beta) | x)
 
 Next we want to find the full conditions of $\theta$ for later use in the implementation of MCMC algorithms to find the posterior. The full conditional of $t_1$ is
 
-$$ f(t_1 | x, \lambda_0, \lambda_1, \beta) \propto e^{t_1 (\lambda_1 - \lambda_0)}.$$
+$$ f(t_1 | x, \lambda_0, \lambda_1, \beta) \propto e^{t_1 (\lambda_1 - \lambda_0)}, \qquad t_1 \in [t_0, t_2].$$
 
 ???????????????????????????????????+ Should $\beta$ and x be included after $|$ here?
 
@@ -116,14 +116,14 @@ The full conditional of $t_1$ is not recognized as a known distribution???????.
 
 The full conditional of $\lambda_0$ is
 
-$$ f(\lambda_0 | x, t_1, \lambda_1, \beta) \propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})}.$$
+$$ f(\lambda_0 | x, t_1, \lambda_1, \beta) \propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})}, \qquad \lambda_2 \geq 0.$$
 
 We recognize the full conditional of $\lambda_0$ as the Gamma$(y_0 + 2, \frac{1}{t_1 - t_0 + \frac{1}{\beta}})$ distribution. Similarily, the full conditional of $\lambda_1$ is
 
-$$ f(\lambda_1 | x, t_1, \lambda_0, \beta) \propto \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})}.$$
+$$ f(\lambda_1 | x, t_1, \lambda_0, \beta) \propto \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})}, \qquad \lambda_1 \geq 0.$$
 
 From this we see that the full conditional of $\lambda_1$ is Gamma$(y_1 + 2, \frac{1}{t_2 - t_1 + \frac{1}{\beta}})$ distributed. Lastly, the expression for the full conditional of $\beta$ is
 
-$$ f(\beta | x, t_1, \lambda_0, \lambda_1) \propto  \frac{1}{\beta^5} e^{\frac{-(1 + \lambda_0 + \lambda_1)}{\beta}}.$$
+$$ f(\beta | x, t_1, \lambda_0, \lambda_1) \propto  \frac{1}{\beta^5} e^{\frac{-(1 + \lambda_0 + \lambda_1)}{\beta}}, \qquad \beta >0.$$
 
 Here $\frac{1}{\beta}$ appear $\textrm{Gamma}(6, \frac{1}{1 + \lambda_0 + \lambda_1})$ distributed.
