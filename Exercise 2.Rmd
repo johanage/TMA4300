@@ -133,10 +133,8 @@ Here $\frac{1}{\beta}$ appear $\textrm{Gamma}(6, \frac{1}{1 + \lambda_0 + \lambd
 
 Loading the dataset from github
 ```{r}
-library(RCurl)
-x <- getURL("https://raw.githubusercontent.com/johanage/TMA4300/master/Gaussian%20Data.txt")
-y <- read.csv(text = x)
-print(y)
+y <- read.csv("https://raw.githubusercontent.com/johanage/TMA4300/master/Gaussian%20Data.csv")
+head(y)
 ```
 
 
