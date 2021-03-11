@@ -190,5 +190,3 @@ We have that:
 
 Use the grid of $\Theta$ value from point 2) to approximate the integral above for $i = 10$. Compare your approximation
 for $\Pi(\eta_i|y)$ with the estimation obtained in point 1) via Gibbs sampling.
-
->>>>>>> ebe2e5601b3ad2436b55afc120afe54556e89e81
