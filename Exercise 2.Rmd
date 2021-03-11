@@ -152,8 +152,12 @@ Here $\frac{1}{\beta}$ appear $\textrm{Gamma}(6, \frac{1}{1 + \lambda_0 + \lambd
 
 Loading the dataset from github
 ```{r}
-y <- read.csv("https://raw.githubusercontent.com/johanage/TMA4300/master/Gaussian%20Data.csv")
-head(y)
+library(ggplot2)
+
+y <- read.csv("https://raw.githubusercontent.com/johanage/TMA4300/master/Gaussian%20Data.csv", header=FALSE)
+head(y, n=length(y[,1]))
+ggplot(y, aes(x=seq(length(y[,1])), y=y[,1]) ) +
+  geom_point()
 ```
 
 
@@ -161,6 +165,8 @@ Our main inferential interest lies in the posterior marginal for the smooth effe
 
 1. Explain why this model is a latent Gaussian model and why it is possible to use INLA to estimate the
 parameters.
+
+
 
 A latent variable model relates a set of observable variables to a set of inferred variables. A latent Gaussian model is a model which infers a variable based on observed variables with that have a Gaussian distribution.
 
