@@ -43,6 +43,7 @@ First we try to get an impression of the data set by making a plot with year alo
 ```{r, fig.cap = "\\label{fig:1a_cumplot} Cumulative number of explosions which resulted in 10 or more fatalities. The time span is from March 15 1851 until March 22 1962."}
 df.coal = coal # Get the data into a new data frame variable
 
+
 # add cumulative number of explosions at each time
 df.coal$cum.n.explosions = c(1, cumsum(rep(1, nrow(coal)-2)), nrow(coal)-2)
 
@@ -66,7 +67,7 @@ Thereby the parameters of the model is $t_1, \dots, t_n$ and $\lambda_0, \dots, 
 
 
 \begin{align*}
-\pi (x | t_1, \dots, t_n, \lambda_0, \dots, \lambda_n)
+f (x | t_1, \dots, t_n, \lambda_0, \dots, \lambda_n)
 &= e^{-\int_{t_0}^{t_{n+1}} \lambda(t) dt} \prod_{k=0}^{n} \lambda_k^{y_k} \\
 &= e^{-\sum_{k = 0}^{n} \lambda_k (t_{k+1} - t_k)} \prod_{k=0}^{n} \lambda_k^{y_k}.
 \end{align*}
@@ -110,7 +111,7 @@ Here it is used that $t_1, \lambda_0$ and $\lambda_1$ all are independent of eac
 
 ## 3)
 
-Next we want to find the full conditionals of $\vect{\theta}$ for later use in the implementation of MCMC algorithms to find the posterior. Let $\vect{\theta}^{-j}$ denote all of vector $\vect{\theta}$ except for the jth element, i.e $\vect{\theta}^{-j} = [\theta_1, \dots, \theta_{j-1}, \theta_{j+1}, \dots, \theta_4]$. The full conditional of element $j$ in component vector $\vect{\theta}$ is defined as
+Next we want to find the full conditionals of $\vect{\theta}$ for later use in the implementation of MCMC algorithms to find the posterior. Let $\vect{\theta}^{-j}$ denote all of vector $\vect{\theta}$ except for the jth element, i.e $\vect{\theta}^{-j} = [\theta^1, \dots, \theta^{j-1}, \theta^{j+1}, \dots, \theta^4]$. The full conditional of element $j$ in component vector $\vect{\theta}$ is defined as
 
 $$ \pi (\theta^j | \vect{\theta}^{-j}) = \frac{\pi(\vect{\theta )}}{\pi (\vect{\theta}^{-j})} \propto  \pi(\vect{\theta )}.$$
 
@@ -118,34 +119,175 @@ Thus, the non-normalised conditional densities of $\theta^j | \vect{\theta}$ can
 
 The full conditional of $t_1$ is
 
-$$ \pi(t_1 | x, \lambda_0, \lambda_1, \beta) \propto e^{t_1 (\lambda_1 - \lambda_0)} \lambda_0^{y_0 + 1} \lambda_1^{y_1 + 1}, \qquad t_1 \in [t_0, t_2].$$
+$$ \pi(t_1 | \vect x, \lambda_0, \lambda_1, \beta) \propto e^{t_1 (\lambda_1 - \lambda_0)} \lambda_0^{y_0 + 1} \lambda_1^{y_1 + 1}, \qquad t_1 \in [t_0, t_2].$$
 
 
 
-The full conditional of $t_1$ is not recognized as a known distribution???????.
+The full conditional of $t_1$ is not recognized as a known distribution.
 
 The full conditional of $\lambda_0$ is
 
-$$ \pi(\lambda_0 | \vect{x}, t_1, \lambda_1, \beta) \propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})}, \qquad \lambda_2 \geq 0.$$
+\begin{equation} \label{eq:fc_lambda0}
+\pi(\lambda_0 | \vect{x}, t_1, \lambda_1, \beta) \propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})}, \qquad \lambda_0 \geq 0.
+\end{equation}
+
 
 We recognize the full conditional of $\lambda_0$ as the Gamma$(y_0 + 2, \frac{1}{t_1 - t_0 + \frac{1}{\beta}})$ distribution. Similarily, the full conditional of $\lambda_1$ is
 
-$$ \pi(\lambda_1 | \vect{x}, t_1, \lambda_0, \beta) \propto \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})}, \qquad \lambda_1 \geq 0.$$
+\begin{equation} \label{eq:fc_lambda1}
+\pi(\lambda_1 | \vect{x}, t_1, \lambda_0, \beta) \propto \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})}, \qquad \lambda_1 \geq 0.
+\end{equation}
 
 From this we see that the full conditional of $\lambda_1$ is Gamma$(y_1 + 2, \frac{1}{t_2 - t_1 + \frac{1}{\beta}})$ distributed. Lastly, the expression for the full conditional of $\beta$ is
 
-$$ \pi(\beta | \vect{x}, t_1, \lambda_0, \lambda_1) \propto  \frac{1}{\beta^5} e^{\frac{-(1 + \lambda_0 + \lambda_1)}{\beta}}, \qquad \beta >0.$$
+\begin{equation} \label{eq:fc_beta}
+\pi(\beta | \vect{x}, t_1, \lambda_0, \lambda_1) \propto  \frac{1}{\beta^5} e^{\frac{-(1 + \lambda_0 + \lambda_1)}{\beta}}, \qquad \beta >0.
+\end{equation}
 
-Here $\beta$ is $\textrm{Inverse Gamma}(6, 1 + \lambda_0 + \lambda_1)$ distributed where the first parameter is the shape parameter and the second is the scale parameter.
+Here $\beta$ is $\textrm{Inverse Gamma}(6, 1 + \lambda_0 + \lambda_1)$ distributed where the first parameter is the shape parameter and the second is the scale parameter. 
+
+
 
 
 ## 4)
 
-In this task we want to implement a single site MCMC algorithm for the posterior distribution $\pi(\vect{\theta} | \vect{x})$
+In this task we want to implement a single site MCMC algorithm for the posterior distribution $\pi(\vect{\theta} | \vect{x})$. Since three out of four full conditionals are known distributions we implement a Hybrid Gibbs sampler (Metropolis-within-Gibbs). This way three out of four components can be sampled very efficiently.
 
-<<<<<<< HEAD
-=======
-Here $\frac{1}{\beta}$ appear $\textrm{Gamma}(6, \frac{1}{1 + \lambda_0 + \lambda_1})$ distributed.
+Before we proceed we want to determine some notation. Denote $\vect \theta_i$ be ith component vector in the MCMC algorithm and let $Q(y ^j | \theta_{i-1}^j, \vect \theta_{i-1}^{-j})$ be the proposal distribution for component j at the ith iteration where $y^j$ is the proposal. Here $\vect \theta_{i-1}^{-j} = [\theta_{i}^1, \dots, \theta_{i}^{j-1}, \theta_{i-1}^{j+1}, \dots, \theta_{i-1}^4]$. The corresponding acceptance probability of the proposal for component $j$ at iteration $i$ is denoted $\alpha(y^j | \vect \theta_{i-1}^j,  \theta_{i-1}^{-j})$ and can be expressed as
+
+?????????????????????????????????????????????????????? Should it here be included x behind | as well?
+
+$$\alpha(y^j | \theta_{i-1}^j,  \vect \theta_{i-1}^{-j})
+= \min \left \{
+1, 
+\frac{\pi (y^j |  \vect \theta_{i-1}^{-j})}{\pi (\theta_{i-1}^j |  \vect \theta_{i-1}^{-j})} 
+\frac{Q (\theta_{i-1}^j | y^j,  \vect \theta_{i-1}^{-j})}{Q (y^j |  \theta_{i-1}^j,  \vect \theta_{i-1}^{-j})} 
+\right \}.$$
+
+Note that for readability $\vect x$ is excluded from the given parameter list for the posterior distribution $\pi$, proposal distribution $Q$ and acceptance probability $\alpha$ expressions.
+
+For $\lambda_0, \lambda_1$ and $\beta$ the proposal distributions are given by respectively equations (\ref{eq:fc_lambda0}), (\ref{eq:fc_lambda1}) and (\ref{eq:fc_beta}).
+
+\begin{align*}
+Q(y_{i}^{\lambda_0} | \theta_i^{\lambda_0}, \vect \theta_i^{- \lambda_0})& = \pi (y_{i}^{\lambda_0} | \vect \theta_i^{- \lambda_0}) \propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})} 0\\
+Q(y_{i}^{\lambda_1} | \theta_i^{\lambda_1}, \vect \theta_i^{- \lambda_1})& = \pi (y_{i}^{\lambda_1} | \vect \theta_i^{- \lambda_1}) 
+\propto \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})} \\
+Q(y_{i}^{\beta} | \theta_i^{\beta}, \vect \theta_i^{- \beta})& = \pi (y_{i}^{\beta} | \vect \theta_i^{- \beta})
+\propto  \frac{1}{\beta^5} e^{\frac{-(1 + \lambda_0 + \lambda_1)}{\beta}}
+\end{align*}
+
+Since all three parameters are updated iteratively from the corresponding univariate full conditionals the acceptance probabilities are always exactly equal to 1.
+
+\begin{align*}
+\alpha(y_{i}^{\lambda_0} | \theta_i^{\lambda_0}, \vect \theta_i^{- \lambda_0})& = 1 \\
+\alpha(y_{i}^{\lambda_1} | \theta_i^{\lambda_1}, \vect \theta_i^{- \lambda_1})& = 1 \\
+\alpha(y_{i}^{\beta} | \theta_i^{\beta}, \vect \theta_i^{- \beta})& = 1
+\end{align*}
+
+??????????????????????????????? Must these be written again? Listed?
+
+For the parameter $t_1$ we use a uniform random walk proposal distribution,
+
+\begin{align*}
+y_{i}^{t_1} \sim \mathrm{Uniform}(\theta_{i-1}^{t_1} - d, \theta_{i-1}^{t_1} + d) \\
+Q(y_{i}^{t_1} | \theta_i^{t_1}, \vect \theta_i^{- t_1}) = \frac{1}{2d}
+\end{align*}
+
+Here $d$ is a tuning parameter. Since the proposal distribution is symmetric around the current value, that is $Q(y_{i}^{t_1} | \theta_i^{t_1}, \vect \theta_i^{- t_1}) = Q(\theta_i^{t_1} | y_{i}^{t_1}, \vect \theta_i^{- t_1})$ the acceptance probability becomes
+
+\begin{align*}
+\alpha(y_{i}^{t_1} | \theta_i^{t_1}, \vect \theta_i^{- t_1})& = \min \left \{ 1, 
+\frac{\pi (y^{t_1} |  \vect \theta_{i-1}^{-t_1})}{\pi (\theta_{i-1}^{t_1} |  \vect \theta_{i-1}^{-t_1})} 
+\right \}.
+\end{align*}
+
+???????????????????????????????? Blir det bare riktig å rejecte hvis random walk går utenfor?
+
+```{r}
+sample.beta.full.conditional = function(lambda0, lambda1) {
+  return(1 / rgamma(1, shape = 6, rate = (1 + lambda0 + lambda1)))
+}
+
+sample.lambda0.full.conditional = function(t1, beta,  t0, y) {
+  return(rgamma(1, shape = (y[1] + 2), rate = (t1 - t0 + 1 / beta)))
+}
+
+sample.lambda1.full.conditional = function(t1, beta, t2, y) {
+  return(rgamma(1, shape = (y[2] + 2), rate = (t2 - t1 + 1 / beta)))
+}
+
+sample.t1.random.walk.uniform = function(t1.prev, lambda0, lambda1, d, t0, t2, y.prev, dates) {
+  t1.proposal = runif(1, t1.prev - d, t1.prev + d)
+  if (t1.proposal <= t0 | t1.proposal >= t2) return(list(t1 = t1.prev, y = y.prev, accepted = 0))
+  
+  full.conditional.t1 = function(t1, lambda0, lambda1, y) {
+    return(exp(t1 * (lambda1 - lambda0)) * lambda0 ^(y[0] + 1) * lambda1^(y[2]+1)) 
+  }
+  
+
+  y.proposal = c(sum(dates <= t1.proposal), sum(dates > t1.proposal))
+  
+  print(full.conditional.t1(t1.proposal, lambda0, lambda1, y.proposal))
+  print(full.conditional.t1(t1.prev, lambda0, lambda1, y.prev))
+  
+  accept.prob = min(full.conditional.t1(t1.proposal, lambda0, lambda1, y.proposal) /
+                      full.conditional.t1(t1.prev, lambda0, lambda1, y.prev)) #, 1)
+  print(accept.prob)
+  u = runif(1)
+  if(u < accept.prob) return(list(t1 = t1.proposal, y = y.proposal, accepted = 1))
+  else return(list(t1 = t1.prev, y = y.prev, accepted = 0))
+}
+
+single.mcmc = function(n, K, dates, d, 
+                       t1.initial = runif(1, dates[1], dates[length(dates)]),
+                       beta.initial = 1 / rgamma(1, shape = 2, rate = 1),
+                       lambda0.initial = 1 / rgamma(1, shape = 3, scale = beta.initial),
+                       lambda1.initial = 1 / rgamma(1, shape = 3, scale = beta.initial)) {
+  K = K + 1 # to make space for initial values
+  t0 = dates[1]
+  t2 = dates[length(dates)]
+  t1.values = rep(NA, n+K)
+  lambda0.values = rep(NA, n+K)
+  lambda1.values = rep(NA, n+K)
+  beta.values = rep(NA, n+K)
+  
+  t1.values[1] = t1.initial
+  y = c(sum(dates <= t1.initial), sum(dates > t1.initial)) # contains y0 and y1
+  lambda0.values[1] = lambda0.initial
+  lambda1.values[1] = lambda1.initial
+  beta.values[1] = beta.initial
+  
+  n.accepted = 0
+  for (i in 2:(n+K)) {
+    new.t1.and.y = sample.t1.random.walk.uniform(t1.values[i-1], lambda0.values[i-1], lambda1.values[i-1],
+                                                 d, t0, t2, y, dates)
+    t1.values[i] = new.t1.and.y$t1
+    y = new.t1.and.y$y
+    n.accepted = n.accepted + new.t1.and.y$accepted
+    beta.values[i] = sample.beta.full.conditional(lambda0.values[i-1], lambda1.values[i-1])
+    lambda0.values[i] = sample.lambda0.full.conditional(t1.values[i], beta.values[i],  t0, y)
+    lambda1.values[i] = sample.lambda1.full.conditional(t1.values[i], beta.values[i], t2, y)
+  }
+  
+  print(y)
+  
+  return(list(t1 = t1.values, beta = beta.values, lambda0 = lambda0.values, lambda1 = lambda1.values,
+              n = n, K = K, d = d, iter = c(seq(0, n+K-1)),
+              percent.accepted = n.accepted / (n + K - 1)))
+}
+
+single.mc.result = single.mcmc(1000,100, df.coal$date, 40)
+single.mc.result$percent.accepted
+plot(single.mc.result$iter, single.mc.result$t1)
+plot(single.mc.result$iter, single.mc.result$lambda0)
+plot(single.mc.result$iter, single.mc.result$lambda1)
+plot(single.mc.result$iter, single.mc.result$beta)
+hist(single.mc.result$t1)
+hist(single.mc.result$lambda0)
+hist(single.mc.result$lambda1)
+hist(single.mc.result$beta)
+```
+
 
 ###########################
 # Exercise B:
