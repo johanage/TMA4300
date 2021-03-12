@@ -6,6 +6,8 @@ author:
 - "Arne Rustad"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
+header-includes:
+   - \usepackage{subfig}
 ---
 
 \newcommand{\vect}[1]{\ensuremath{\boldsymbol{\mathbf{#1} }}}
@@ -29,6 +31,9 @@ library(ggplot2)
 library(dplyr)
 library(tidyverse)
 library(boot)
+library(stats)
+library(latex2exp)
+library(coda)
 ```
 
 # Problem A
@@ -357,32 +362,66 @@ single.mc.result = single.mcmc(10000,1000, df.coal$date, 10)
 ```{r fig_captions5, echo = FALSE}
 # Creating the figure caption
 fig.caption.trace.plot = paste("\\label{fig:trace_plot} Trace plot of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for a burn-in period of 1000 iterations and then 10000 iterations of a hopefully converged single site MCMC algorithm. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ".", sep = "")
+
+fig.caption.histogram.plot = paste("\\label{fig:histogram_plot} Histogram of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for 10000 iterations after discarding the 1000 burn-in samples. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ".", sep = "")
+
+fig.caption.autocorrelation.plot = paste("\\label{fig:autocorrelation_plot}Autocorrelation plot of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for 10000 iterations after discarding the 1000 burn-in samples. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ".", sep = "")
 ```
 
 
 ```{r, fig.width = 10, fig.height = 4, eval.after = "fig.cap", fig.cap = fig.caption.trace.plot, dependson="fig_captions5"}
-ggplot(single.mc.result$df.parameters.long, aes(x = iter, y = value)) +geom_line() +
+# Plot trace plots of each parameter for a single realization of the single site MCMC
+ggplot(single.mc.result$df.parameters.long, aes(x = iter, y = value)) + geom_line() +
   facet_wrap(~parameters, scale = "free_y") +
   geom_vline(aes(xintercept = single.mc.result$K, col = "Cut off point burn in period"), size = 1) +
   theme(legend.position="bottom") + guides(col = guide_legend("Line")) +
   xlab("Iteration") + ylab("Value") + ggtitle("Trace plot of the parameters")
 ```
 
-From Figure \ref{fig:trace_plot} it appears that 
+From Figure \ref{fig:trace_plot} it appears that the MCMC output has converged to the posterior distribution according to the trace plot. The samples forming a homogene band after the burn-in period (and some time before) indicates convergence. 
 
-```{r, fig.width = 10, fig.height = 4}
+```{r, fig.width = 10, fig.height = 4, fig.cap = fig.caption.histogram.plot, dependson="fig_caption5"}
+# Plot histograms of each parameter for a single realization of the single site MCMC
 ggplot(subset(single.mc.result$df.parameters.long, burn.in == FALSE),
        aes(x = value, y = ..density..)) + geom_histogram(colour = "lightgrey") +
   facet_wrap(~parameters, scale = "free") + ggtitle("Histogram of parameter values after burn-in period")
 ```
 
-
-
-
-```{r}
+```{r, echo = FALSE}
+t1.assumed = 1890
+t0 = df.coal$date[1]
+t2 = df.coal$date[nrow(df.coal)]
+date.explosions = df.coal$date[2:nrow(df.coal)]
+lambda0.estimated = sum(date.explosions <= t1.assumed) / (t1.assumed-t0)
+lambda1.estimated = sum(date.explosions > t1.assumed) / (t2-t1.assumed)
 ```
 
 
+From Figure \ref{fig:1a_cumplot} it appears that there is a change in rate of accidents around 1890. Consequently, since the histogram plot of parameter $t_1$ in Figure \ref{fig:histogram_plot} is centered around 1890 and has most of it's samples a distance of plus-minus five years away, it indicates that the simulated values of $t_1$ are reasonable. If we assume that 1890 is the correct value of $t_1$ and calulcate the average rate of accidents between $t_0$ and 1890 then we get a rate of $`r round(lambda0.estimated,3)`$. Similarily, if we calculate the average rate of accidents between $t_0$ and 1890 then we get a rate of $`r round(lambda1.estimated,3)`$. Comparing these values against the corresponding histograms of simulated values in Figure \ref{fig:histogram_plot} it appears that the simulated values of $\lambda_0$ and $\lambda_1$ are reasonable.
+
+Another diagnostic tool is to examine dependencies of successive MCMC samples. From the autocorrelation plots in figure \ref{fig:autocorrelation_plot} we observed that for lag 20 and higher there is almost zero correlation between the samples for $t_1$. Additionally, the correlation is almost zero already for lag 5 for both $\lambda_0$ and $\lambda_1$ samples and lag 3 for $\beta$ samples. 
+
+```{r, fig.width=8, fig.height=4, fig.ncol = 2, out.width = "50%", fig.show = "hold", fig.cap = fig.caption.autocorrelation.plot, dependsupon="fig_caption5"}
+df.parameters.after.burn.in = subset(single.mc.result$df.parameters, burn.in == FALSE)
+# Plotting the autocorrelation functions for the parameter samples
+acf(df.parameters.after.burn.in$t1, main = TeX("Autocorrelation for $t_1$ samples"))
+acf(df.parameters.after.burn.in$beta, main = TeX("Autocorrelation for $\\beta$ samples"))
+acf(df.parameters.after.burn.in$lambda0, main = TeX("Autocorrelation for $\\lambda_0$ samples"))
+acf(df.parameters.after.burn.in$lambda1, main = TeX("Autocorrelation for $\\lambda_1$ samples"))
+```
+
+
+```{r}
+# Finding estimates for effective sample size
+effective.size.single.site.mcmc = effectiveSize(as.mcmc(df.parameters.after.burn.in[, c("t1", "beta", "lambda0", "lambda1")]))
+effective.size.single.site.mcmc
+```
+
+
+A useful measure to compare the performance of MCMC sampler is the effective sample size (ESS).
+
+$$ \mathrm{ESS} = \frac{n}{\tau}, \qquad \tau = 1 + 2 \sum_{k=1}^\infty \rho(k),$$
+where $\tau$ is the autocorrelation time and $\rho(k)$ the autocorrelation at lag $k$. The effective samples size of $t_1, \beta, \lambda_0$ and $\lambda_1$ is respectively $`r round(effective.size.single.site.mcmc[1], 2)`$, $`r round(effective.size.single.site.mcmc[2], 2)`$, $`r round(effective.size.single.site.mcmc[3], 2)`$ and $`r round(effective.size.single.site.mcmc[4], 2)`$. In compliance with the autocorrelation plots, the effective sample size of $t_1$ is much smaller than the other parameters. This is due to the samples of $t_1$ being much more correlated.
 
 
 ###########################
