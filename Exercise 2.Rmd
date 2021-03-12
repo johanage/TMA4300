@@ -44,7 +44,7 @@ First we try to get an impression of the data set by making a plot with year alo
 df.coal = coal # Get the data into a new data frame variable
 
 
-# add cumulative number of explosions at each time
+# add cumulative number of explosions at each time, letting first and last date be respectively start and end date of study
 df.coal$cum.n.explosions = c(1, cumsum(rep(1, nrow(coal)-2)), nrow(coal)-2)
 
 # plot the cumulative number of explosions as a function of time
@@ -204,89 +204,185 @@ Here $d$ is a tuning parameter. Since the proposal distribution is symmetric aro
 ???????????????????????????????? Blir det bare riktig å rejecte hvis random walk går utenfor?
 
 ```{r}
+# function used to sample from full conditional of beta
 sample.beta.full.conditional = function(lambda0, lambda1) {
   return(1 / rgamma(1, shape = 6, rate = (1 + lambda0 + lambda1)))
 }
 
+#function used to sample from full conditional of lambda0
 sample.lambda0.full.conditional = function(t1, beta,  t0, y) {
   return(rgamma(1, shape = (y[1] + 2), rate = (t1 - t0 + 1 / beta)))
 }
 
+#function used to sample from full conditional of lambda1
 sample.lambda1.full.conditional = function(t1, beta, t2, y) {
   return(rgamma(1, shape = (y[2] + 2), rate = (t2 - t1 + 1 / beta)))
 }
 
+#function used to sample a new t1 value using a uniform random walk with Metropolis-Hastings
+# probability for accepting new t1 value. If new step not accepted, returns old value.
+#Implemented on log-form for efficiency and avoiding too large or to small values
+# d is a tuning parameter that determines how large steps can be taken
 sample.t1.random.walk.uniform = function(t1.prev, lambda0, lambda1, d, t0, t2, y.prev, dates) {
+  # get proposal for new t1 value from uniform distribution around current value
   t1.proposal = runif(1, t1.prev - d, t1.prev + d)
+  
+  # if proposal is outside the allowed range, return the current value of t1
   if (t1.proposal <= t0 | t1.proposal >= t2) return(list(t1 = t1.prev, y = y.prev, accepted = 0))
   
-  full.conditional.t1 = function(t1, lambda0, lambda1, y) {
-    return(exp(t1 * (lambda1 - lambda0)) * lambda0 ^(y[0] + 1) * lambda1^(y[2]+1)) 
+  # function returning the not normalized full conditional of t1 on log-form
+  log.full.conditional.t1 = function(t1, lambda0, lambda1, y) {
+    return(t1 * (lambda1 - lambda0) + (y[1] + 1) * log(lambda0)  + (y[2]+1) * log(lambda1)) 
   }
   
-
+  # find the number of explosions between t0 and t1 (y1) and the number of explosions 
+  # between t1 and t2 (y2)
   y.proposal = c(sum(dates <= t1.proposal), sum(dates > t1.proposal))
   
-  print(full.conditional.t1(t1.proposal, lambda0, lambda1, y.proposal))
-  print(full.conditional.t1(t1.prev, lambda0, lambda1, y.prev))
+  #calculate acceptance probability
+  accept.prob = min(exp(log.full.conditional.t1(t1.proposal, lambda0, lambda1, y.proposal) - 
+                          log.full.conditional.t1(t1.prev, lambda0, lambda1, y.prev)), 1)
   
-  accept.prob = min(full.conditional.t1(t1.proposal, lambda0, lambda1, y.proposal) /
-                      full.conditional.t1(t1.prev, lambda0, lambda1, y.prev)) #, 1)
-  print(accept.prob)
+  # get a uniform random number between 0 and 1
   u = runif(1)
+  # Return new propsals if u < acceptance probability
   if(u < accept.prob) return(list(t1 = t1.proposal, y = y.proposal, accepted = 1))
+  #else return current values
   else return(list(t1 = t1.prev, y = y.prev, accepted = 0))
 }
+```
 
+```{r}
+# Implements a single site mcmc formula for approximating the posterior distribution of the parameters of interest
 single.mcmc = function(n, K, dates, d, 
                        t1.initial = runif(1, dates[1], dates[length(dates)]),
                        beta.initial = 1 / rgamma(1, shape = 2, rate = 1),
                        lambda0.initial = 1 / rgamma(1, shape = 3, scale = beta.initial),
                        lambda1.initial = 1 / rgamma(1, shape = 3, scale = beta.initial)) {
+  "
+  Input:
+    -n: number of useful samples after the burn-in period wanted
+    -K: length of the burn-in period
+    -dates: the dates of the explosions (+ start and end date)
+    -d: the maximum step length for the uniform random walk of t1
+    -t1.initial: the initial value of t1. If not provided it is sampled from the prior
+    -beta.initial: the initial value of beta. If not provided it is sampled from the prior
+    -lambda0.initial: the initial value of lambda0. If not provided it is sampled from the
+    prior given beta.initial
+    -lambda1.initial: the initial value of lambda1. If not provided it is sampled from the
+    prior given beta.initial
+    
+  Output:
+    -A list containing
+      -- t1: a vector of sampled t1 values
+      -- beta: a vector of sampled beta values
+      -- lambda0: a vector of sampled lambda0 values
+      -- lambda1: a vector of sampled lambda1 values
+      -- iter = iter
+      -- df.parameters: a data frame containing all of the vectors above as columns in
+      addition to a column with boolean value of TRUE if the observation is a part of the
+      burn-in period
+      -- df.parameters.long: a data frame with the same info as df.parameters, but in long-format
+      -- n: number of useful samples after the burn-in period wanted
+      -- K: length of the burn-in period
+      -- d: the maximum step length for the uniform random walk of t1
+      -- percent.t1.accepted: the percent of proposed t1 values accepted
+  "
+  
+  
   K = K + 1 # to make space for initial values
-  t0 = dates[1]
-  t2 = dates[length(dates)]
+  t0 = dates[1] # extract start date
+  t2 = dates[length(dates)] # extract end date
+  date.explosions = dates[2:(length(dates) - 1)] # remove start and end date
+  # Create vectors to store values
   t1.values = rep(NA, n+K)
   lambda0.values = rep(NA, n+K)
   lambda1.values = rep(NA, n+K)
   beta.values = rep(NA, n+K)
   
+  # Add initial values
   t1.values[1] = t1.initial
-  y = c(sum(dates <= t1.initial), sum(dates > t1.initial)) # contains y0 and y1
   lambda0.values[1] = lambda0.initial
   lambda1.values[1] = lambda1.initial
   beta.values[1] = beta.initial
   
-  n.accepted = 0
+  # create y containing y0 and y1
+  y = c(sum(date.explosions <= t1.initial), sum(date.explosions > t1.initial)) 
+  
+  n.accepted = 0 # keep track of number of accepted t1 proposals
   for (i in 2:(n+K)) {
+    # simulate new t1 value. Get corresponding new y value
     new.t1.and.y = sample.t1.random.walk.uniform(t1.values[i-1], lambda0.values[i-1], lambda1.values[i-1],
-                                                 d, t0, t2, y, dates)
+                                                 d, t0, t2, y, date.explosions)
     t1.values[i] = new.t1.and.y$t1
     y = new.t1.and.y$y
+    # keep track of number of accepted t1 proposals
     n.accepted = n.accepted + new.t1.and.y$accepted
+    # simulate new beta, lambda0 and lambda1 from full conditionals
     beta.values[i] = sample.beta.full.conditional(lambda0.values[i-1], lambda1.values[i-1])
     lambda0.values[i] = sample.lambda0.full.conditional(t1.values[i], beta.values[i],  t0, y)
     lambda1.values[i] = sample.lambda1.full.conditional(t1.values[i], beta.values[i], t2, y)
   }
   
-  print(y)
+  # Create a vector with the iteration numbers. The initial values correspond to iteration 0.
+  iter = c(seq(0, n+K-1))
   
+  # Add parameter values and other interesting information to a data frame
+  df.parameters = data.frame(iter = iter, t1 = t1.values, beta = beta.values, lambda0 = lambda0.values,
+                             lambda1 = lambda1.values, burn.in = c(rep(TRUE, K), rep(FALSE, n)))
+  
+  # make the same dataframe on long format
+  df.parameters.long = pivot_longer(df.parameters, c(-iter, -burn.in), names_to = "parameters", values_to = "value")
+  
+  # return everything of interest in a list for easy access
   return(list(t1 = t1.values, beta = beta.values, lambda0 = lambda0.values, lambda1 = lambda1.values,
-              n = n, K = K, d = d, iter = c(seq(0, n+K-1)),
-              percent.accepted = n.accepted / (n + K - 1)))
+              df.parameters = df.parameters, df.parameters.long = df.parameters.long,
+              n = n, K = K-1, d = d, iter = iter, percent.t1.accepted = n.accepted / (n + K - 1)))
 }
-
-single.mc.result = single.mcmc(1000,100, df.coal$date, 40)
-single.mc.result$percent.accepted
-plot(single.mc.result$iter, single.mc.result$t1)
-plot(single.mc.result$iter, single.mc.result$lambda0)
-plot(single.mc.result$iter, single.mc.result$lambda1)
-plot(single.mc.result$iter, single.mc.result$beta)
-hist(single.mc.result$t1)
-hist(single.mc.result$lambda0)
-hist(single.mc.result$lambda1)
-hist(single.mc.result$beta)
 ```
+
+## 5)
+
+In this task we run our single site algorithm implemented in task 4) and evaluate the burn-in and mixing properties of our algorithm.
+
+???????????????????????????????????? How many starting values must we test for and for how many iterations?
+???????????????????????????????????? Must we say that 1940 could be an okay estimate for t1 as well?
+
+```{r}
+# run the algorithm for intital values sampled from prior
+set.seed(1)
+single.mc.result = single.mcmc(10000,1000, df.coal$date, 10)
+```
+
+```{r fig_captions5, echo = FALSE}
+# Creating the figure caption
+fig.caption.trace.plot = paste("\\label{fig:trace_plot} Trace plot of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for a burn-in period of 1000 iterations and then 10000 iterations of a hopefully converged single site MCMC algorithm. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ".", sep = "")
+```
+
+
+```{r, fig.width = 10, fig.height = 4, eval.after = "fig.cap", fig.cap = fig.caption.trace.plot, dependson="fig_captions5"}
+ggplot(single.mc.result$df.parameters.long, aes(x = iter, y = value)) +geom_line() +
+  facet_wrap(~parameters, scale = "free_y") +
+  geom_vline(aes(xintercept = single.mc.result$K, col = "Cut off point burn in period"), size = 1) +
+  theme(legend.position="bottom") + guides(col = guide_legend("Line")) +
+  xlab("Iteration") + ylab("Value") + ggtitle("Trace plot of the parameters")
+```
+
+From Figure \ref{fig:trace_plot} it appears that 
+
+```{r, fig.width = 10, fig.height = 4}
+ggplot(subset(single.mc.result$df.parameters.long, burn.in == FALSE),
+       aes(x = value, y = ..density..)) + geom_histogram(colour = "lightgrey") +
+  facet_wrap(~parameters, scale = "free") + ggtitle("Histogram of parameter values after burn-in period")
+```
+
+
+
+
+```{r}
+```
+
+
 
 
 ###########################
