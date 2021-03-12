@@ -418,10 +418,30 @@ effective.size.single.site.mcmc
 ```
 
 
-A useful measure to compare the performance of MCMC sampler is the effective sample size (ESS).
+A useful measure to compare the performance of MCMC samplers is the effective sample size (ESS).
 
 $$ \mathrm{ESS} = \frac{n}{\tau}, \qquad \tau = 1 + 2 \sum_{k=1}^\infty \rho(k),$$
 where $\tau$ is the autocorrelation time and $\rho(k)$ the autocorrelation at lag $k$. The effective samples size of $t_1, \beta, \lambda_0$ and $\lambda_1$ is respectively $`r round(effective.size.single.site.mcmc[1], 2)`$, $`r round(effective.size.single.site.mcmc[2], 2)`$, $`r round(effective.size.single.site.mcmc[3], 2)`$ and $`r round(effective.size.single.site.mcmc[4], 2)`$. In compliance with the autocorrelation plots, the effective sample size of $t_1$ is much smaller than the other parameters. This is due to the samples of $t_1$ being much more correlated.
+
+The diagnostics above was done only for a single MCMC realization. To increase our certainty that the chain actually has converged to the posterior distrbution we will try to run it again from multiple initial values far away from the values it converged to above.
+
+```{r, fig.width=10, fig.height = 5}
+single.mc.result1 = single.mcmc(10000,1000, df.coal$date, 10, t1.initial = 1960, beta.initial = 5, lambda0.initial = 10, lambda1.initial = 10)
+single.mc.result2 = single.mcmc(10000,1000, df.coal$date, 10, t1.initial = 1855, beta.initial = 5, lambda0.initial = 0.1, lambda1.initial = 10)
+
+df.parameters.single.mc.multiple = rbind(single.mc.result1$df.parameters.long, single.mc.result2$df.parameters.long)
+df.parameters.single.mc.multiple$realization = c(rep("1", nrow(single.mc.result1$df.parameters.long)), rep("2", nrow(single.mc.result2$df.parameters.long)))
+
+# Plot trace plots of each parameter for a single realization of the single site MCMC
+ggplot(df.parameters.single.mc.multiple, aes(x = iter, y = value, col = realization)) + geom_line(alpha = 0.75) +
+  facet_wrap(~parameters, scale = "free_y") +
+  geom_vline(aes(xintercept = single.mc.result$K, col = "Cut off point burn in period"), size = 1) +
+  theme(legend.position="bottom") + guides(col = guide_legend("Line")) +
+  xlab("Iteration") + ylab("Value") + ggtitle("Trace plot of the parameters") +
+  scale_color_manual(values = c("black", "lightblue", "red"))
+```
+
+
 
 
 ###########################
