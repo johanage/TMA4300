@@ -425,23 +425,32 @@ where $\tau$ is the autocorrelation time and $\rho(k)$ the autocorrelation at la
 
 The diagnostics above was done only for a single MCMC realization. To increase our certainty that the chain actually has converged to the posterior distrbution we will try to run it again from multiple initial values far away from the values it converged to above.
 
-```{r, fig.width=10, fig.height = 5}
+```{r fig_captions5_multiple, echo = FALSE}
+# Creating the figure caption
+fig.caption.trace.plot.multiple = paste("\\label{fig:trace_plot_multiple} Trace plot of the realizations of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for two different initial value. The burn-in is decided beforehand and is set to a 1000 iterations. After the burn-in each of the chanis are run for another 10000 iterations. The initial values for realization 1 were; $t_1^{\\textrm{initial}} =$ ", 1960, ", $\\beta^{\\textrm{initial}} =$ ", 5 , ", $\\lambda_0^{\\textrm{initial}} =$ ", 10, ", $\\lambda_1^{\\textrm{initial}} =$ ", 10, ". The initial values for realization 2 were; $t_1^{\\textrm{initial}} =$ ", 1855, ", $\\beta^{\\textrm{initial}} =$ ", 5 , ", $\\lambda_0^{\\textrm{initial}} =$ ", 0.1, ", $\\lambda_1^{\\textrm{initial}} =$ ", 10, ".",sep = "")
+```
+
+```{r, fig.width=10, fig.height = 5, dependson="fig_captions5_multiple", fig.cap = fig.caption.trace.plot.multiple}
 single.mc.result1 = single.mcmc(10000,1000, df.coal$date, 10, t1.initial = 1960, beta.initial = 5, lambda0.initial = 10, lambda1.initial = 10)
 single.mc.result2 = single.mcmc(10000,1000, df.coal$date, 10, t1.initial = 1855, beta.initial = 5, lambda0.initial = 0.1, lambda1.initial = 10)
 
+set.seed(1)
 df.parameters.single.mc.multiple = rbind(single.mc.result1$df.parameters.long, single.mc.result2$df.parameters.long)
 df.parameters.single.mc.multiple$realization = c(rep("1", nrow(single.mc.result1$df.parameters.long)), rep("2", nrow(single.mc.result2$df.parameters.long)))
 
 # Plot trace plots of each parameter for a single realization of the single site MCMC
 ggplot(df.parameters.single.mc.multiple, aes(x = iter, y = value, col = realization)) + geom_line(alpha = 0.75) +
   facet_wrap(~parameters, scale = "free_y") +
+  
   geom_vline(aes(xintercept = single.mc.result$K, col = "Cut off point burn in period"), size = 1) +
-  theme(legend.position="bottom") + guides(col = guide_legend("Line")) +
-  xlab("Iteration") + ylab("Value") + ggtitle("Trace plot of the parameters") +
-  scale_color_manual(values = c("black", "lightblue", "red"))
+  theme(legend.position="bottom") + guides(col = guide_legend("Lines")) +
+  xlab("Iteration") + ylab("Value") + 
+  
+  ggtitle("Trace plot of the parameters for two differently chosen initial conditions") +
+  scale_color_manual(values = c("black", "lightblue", "red"), labels = c("Realization 1", "Realization 2", "Cut off point burn in period"))
 ```
 
-
+In Figure \ref{fig:trace_plot_multiple} we see an example where the burn-in of 1000 iterations is not enough to converge to the posterior distribution. Even though both chains appear to converge to the same distribution, it is not until around iteration 2000 that realization 1 appear to have converged. For the previous iterations it is stuck at a local minima for $t_1$ around 1940. This illustrates the importance of running the MCMC long enough and from multiple initial conditions to better ensure that convergence has actually been reached.
 
 
 ###########################
