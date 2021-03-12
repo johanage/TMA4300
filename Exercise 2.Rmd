@@ -450,7 +450,7 @@ ggplot(df.parameters.single.mc.multiple, aes(x = iter, y = value, col = realizat
   scale_color_manual(values = c("black", "lightblue", "red"), labels = c("Realization 1", "Realization 2", "Cut off point burn in period"))
 ```
 
-In Figure \ref{fig:trace_plot_multiple} we see an example where the burn-in of 1000 iterations is not enough to converge to the posterior distribution. Even though both chains appear to converge to the same distribution, it is not until around iteration 2000 that realization 1 appear to have converged. For the previous iterations it is stuck at a local minima for $t_1$ around 1940. This illustrates the importance of running the MCMC long enough and from multiple initial conditions to better ensure that convergence has actually been reached.
+In Figure \ref{fig:trace_plot_multiple} we see an example where the burn-in of 1000 iterations is not enough to converge to the posterior distribution. Even though both chains appear to converge to the same distribution, it is not until around iteration 2000 that realization 1 appear to have converged. For the previous iterations it is stuck at a local minima for $t_1$ around 1940. This illustrates the importance of running the MCMC algorithm long enough and from multiple initial conditions to determine if convergence has actually been reached.
 
 
 ###########################
