@@ -559,6 +559,71 @@ From Figure \ref{fig:trace_plot_low_d} we observe that for $d \leq 5$ the algori
 
 ## 7)
 
+??????????????????????????????????????????????????? Must we write what a single and block MCMC is?
+
+Next we define and implement a block Metropolis–Hastings algorithm for $\pi(\vect \theta | \vect x)$ using the following two block proposals. The first version uses a block proposal for $(t_1, \lambda_0, \lambda_1)$ keeping $\beta$ unchanged. We generate the potential new values $(\tilde t_1, \lambda_0, \lambda_1)$ by first generating $\tilde t_1$ from a normal distribution cented at the current value of $t_1$ and thereafter generate $(\tilde \lambda_0, \tilde \lambda_1)$ from their joint full conditionals inserted the potential new value $\tilde t_1$, i.e $\pi(\lambda_0, \lambda_1 | \vect x, \tilde t_1, \beta)$.
+
+?????????????????????????????????????????++ is lambda0 and lambda 1 independent (joint conditional)
+
+As $\lambda_0$ and $\lambda_1$ are independent given $\beta$ and $t_1$ their joint full conditional is
+
+\begin{align*}
+\pi(\lambda_0, \lambda_1 | \vect x, t_1, \beta)
+&= \pi(\lambda_0 | \vect{x}, t_1, \lambda_1, \beta) \pi(\lambda_1 | \vect{x}, t_1, \lambda_0, \beta) \\
+&\propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})}  \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})}, \qquad  \lambda_0 \geq 0, \lambda_1 \geq 0.
+\end{align*}
+
+Using that the joint conditional of $(t_1, \lambda_0, \lambda_1)$ is proportional to the full posterior, we get that their joint full conditional is proportional to
+
+\begin{align*}
+\pi(t_1, \lambda_0, \lambda_1 | \vect x, \beta)
+&= \frac{\pi(\lambda_0, \lambda_1, t_1, \beta | \vect x)}{\pi(\beta | \vect x)}
+\propto \pi(\lambda_0, \lambda_1, t_1, \beta | \vect x) \\
+&\propto e^{-\lambda_0 (t_{1} - t_0) - \lambda_1 (t_{2} - t_1) - \frac{\lambda_0 + \lambda_1 + 1}{\beta}}
+\lambda_0^{y_0 + 1} \lambda_1^{y_1 + 1}, \qquad  \lambda_0 \geq 0, \lambda_1 \geq 0, t_1 \in [t_0, t_2].
+\end{align*}
+
+!!!!!!!!!!!!!!!!!!!! must write acceptance probabilities and proposal functions.
+
+
+```{r}
+#function used to sample a new t1, lambda0 and lambda1 value using a block proposal.
+# First a new t1 is proposed from a normal distribution centered at the current value of t1.
+# Thereafter lambda0 and lambda1 are generated from their joint full conditionals given beta and proposed t1.
+# Lastly the proposals are either accepted or rejected. If rejected, the current values are returned.
+# Implemented on log-form for efficiency and avoiding too large or to small values
+# sigma is a tuning parameter that determines how large steps sizes are usually taken by t1
+sample.block.t1.normal.walk.and.lambdas. = function(t1.prev, lambda0.prev, lambda1.prev, beta, sigma, t0, t2, y.prev, dates) {
+  # get proposal for new t1 value from normal distribution around current value
+  t1.proposal = rnorm(1, mean = 0, sd = sigma)
+  y.proposal = c(sum(dates <= t1.proposal), sum(dates > t1.proposal))
+  # get proposal for lambda0 and lambda1 from joint conditional given t1.proposal and beta
+  lambda0.proposal = sample.lambda0.full.conditional(t1.proposal, beta, t0, y.proposal)
+  lambda1.proposal = sample.lambda1.full.conditional(t1.proposal, beta, t2, y.proposal)
+  
+  # if proposal is outside the allowed range, return the current value of t1, lambda0 and lambda1
+  if (t1.proposal <= t0 | t1.proposal >= t2) return(list(t1 = t1.prev, lambda0 = lambda0.prev, lambda1 = lambda1.prev,
+                                                         y = y.prev, accepted = 0))
+  
+  # function returning the not normalized joint conditional of t1, lambda0 and lambda1 on log-form
+  log.joint.conditional.t1.lambda0.lambda1 = function(t1, lambda0, lambda1, y) {
+    return(- lambda0 * (t1 - t0) - lambda1 * (t2 - t1) - (lambda0 + lambda1 + 1) / beta +
+             (y[1] + 1) * log(lambda0) + (y[2] + 1) * lambda1) 
+  }
+  
+  #calculate acceptance probability
+  accept.prob = min(exp(log.full.conditional.t1(t1.proposal, lambda0.proposal, lambda.proposal, y.proposal) - 
+                          log.full.conditional.t1(t1.prev, lambda0.prev, lambda1.prev, y.prev)), 1)
+  
+  # get a uniform random number between 0 and 1
+  u = runif(1)
+  # Return new propsals if u < acceptance probability
+  if(u < accept.prob) return(list(t1 = t1.proposal, lambda0 = lambda0.proposal, lambda1 = lambda1.proposal,
+                                  y = y.proposal, accepted = 1))
+  #else return current values
+  else return(list(t1 = t1.prev, lambda0 = lambda0.prev, lambda1 = lambda1.prev, y = y.prev, accepted = 0))
+}
+```
 
 
 
