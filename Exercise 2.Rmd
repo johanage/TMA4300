@@ -107,11 +107,8 @@ Here it is used that $t_1, \lambda_0$ and $\lambda_1$ all are independent of eac
 \frac{1}{\beta^2} \lambda_0 e^{\frac{-\lambda_0}{\beta}}
 \frac{1}{\beta^2} \lambda_1 e^{\frac{-\lambda_1}{\beta}}
 \frac{e^{\frac{-1}{\beta}}}{\beta} \\
-&\propto e^{-\lambda_0 (t_{1} - t_0) - \lambda_1 (t_{2} - t_1)}
-\lambda_0^{y_0} \lambda_1^{y_1}
-\frac{1}{\beta^2} \lambda_0 e^{\frac{-\lambda_0}{\beta}}
-\frac{1}{\beta^2} \lambda_1 e^{\frac{-\lambda_1}{\beta}}
-\frac{e^{\frac{-1}{\beta}}}{\beta}.
+&\propto e^{-\lambda_0 (t_{1} - t_0) - \lambda_1 (t_{2} - t_1) - \frac{\lambda_0 + \lambda_1 + 1}{\beta}}
+\lambda_0^{y_0 + 1} \lambda_1^{y_1 + 1} \beta^{-5}
 \end{align*}
 
 ## 3)
@@ -353,23 +350,23 @@ In this task we run our single site algorithm implemented in task 4) and evaluat
 ???????????????????????????????????? How many starting values must we test for and for how many iterations?
 ???????????????????????????????????? Must we say that 1940 could be an okay estimate for t1 as well?
 
-```{r}
+```{r run_mcmc_single}
 # run the algorithm for intital values sampled from prior
 set.seed(1)
-single.mc.result = single.mcmc(10000,1000, df.coal$date, 10)
+single.mc.result = single.mcmc(20000,1000, df.coal$date, 10)
 ```
 
 ```{r fig_captions5, echo = FALSE}
 # Creating the figure caption
-fig.caption.trace.plot = paste("\\label{fig:trace_plot} Trace plot of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for a burn-in period of 1000 iterations and then 10000 iterations of a hopefully converged single site MCMC algorithm. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ".", sep = "")
+fig.caption.trace.plot = paste("\\label{fig:trace_plot} Trace plot of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for a burn-in period of 1000 iterations and then 20000 iterations of a hopefully converged single site MCMC algorithm. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ". The tuning parameter $d = 10.$", sep = "")
 
-fig.caption.histogram.plot = paste("\\label{fig:histogram_plot} Histogram of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for 10000 iterations after discarding the 1000 burn-in samples. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ".", sep = "")
+fig.caption.histogram.plot = paste("\\label{fig:histogram_plot} Histogram of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for 20000 iterations after discarding the 1000 burn-in samples. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ". The tuning parameter $d = 10.$", sep = "")
 
-fig.caption.autocorrelation.plot = paste("\\label{fig:autocorrelation_plot}Autocorrelation plot of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for 10000 iterations after discarding the 1000 burn-in samples. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ".", sep = "")
+fig.caption.autocorrelation.plot = paste("\\label{fig:autocorrelation_plot}Autocorrelation plot of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for 20000 iterations after discarding the 1000 burn-in samples. The initial values was drawn from the priors and was for this realization; $t_1^{\\textrm{initial}} =$ ", round(single.mc.result$t1[1],3), ", $\\beta^{\\textrm{initial}} =$ ", round(single.mc.result$beta[1],3), ", $\\lambda_0^{\\textrm{initial}} =$ ", round(single.mc.result$lambda0[1],3), ", $\\lambda_1^{\\textrm{initial}} =$ ", round(single.mc.result$lambda1[1],3), ". The tuning parameter $d = 10.$", sep = "")
 ```
 
 
-```{r, fig.width = 10, fig.height = 4, eval.after = "fig.cap", fig.cap = fig.caption.trace.plot, dependson="fig_captions5"}
+```{r, fig.width = 10, fig.height = 4, eval.after = "fig.cap", fig.cap = fig.caption.trace.plot, dependson=c("fig_captions5", "run_mcmc_single")}
 # Plot trace plots of each parameter for a single realization of the single site MCMC
 ggplot(single.mc.result$df.parameters.long, aes(x = iter, y = value)) + geom_line() +
   facet_wrap(~parameters, scale = "free_y") +
@@ -427,12 +424,13 @@ The diagnostics above was done only for a single MCMC realization. To increase o
 
 ```{r fig_captions5_multiple, echo = FALSE}
 # Creating the figure caption
-fig.caption.trace.plot.multiple = paste("\\label{fig:trace_plot_multiple} Trace plot of the realizations of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for two different initial value. The burn-in is decided beforehand and is set to a 1000 iterations. After the burn-in each of the chanis are run for another 10000 iterations. The initial values for realization 1 were; $t_1^{\\textrm{initial}} =$ ", 1960, ", $\\beta^{\\textrm{initial}} =$ ", 5 , ", $\\lambda_0^{\\textrm{initial}} =$ ", 10, ", $\\lambda_1^{\\textrm{initial}} =$ ", 10, ". The initial values for realization 2 were; $t_1^{\\textrm{initial}} =$ ", 1855, ", $\\beta^{\\textrm{initial}} =$ ", 5 , ", $\\lambda_0^{\\textrm{initial}} =$ ", 0.1, ", $\\lambda_1^{\\textrm{initial}} =$ ", 10, ".",sep = "")
+fig.caption.trace.plot.multiple = paste("\\label{fig:trace_plot_multiple} Trace plot of the realizations of the parameters $\\beta, \\lambda_0, \\lambda_1$ and $t_1$ for two different sets of initial values. Each of the chains are run for 20000 iterations with tuning parameter $d = 10$. The initial values for realization 2 were; $t_1^{\\textrm{initial}} =$ ", 1960, ", $\\beta^{\\textrm{initial}} =$ ", 5 , ", $\\lambda_0^{\\textrm{initial}} =$ ", 10, ", $\\lambda_1^{\\textrm{initial}} =$ ", 10, ". The initial values for realization 3 were; $t_1^{\\textrm{initial}} =$ ", 1855, ", $\\beta^{\\textrm{initial}} =$ ", 5 , ", $\\lambda_0^{\\textrm{initial}} =$ ", 0.1, ", $\\lambda_1^{\\textrm{initial}} =$ ", 10, ".",sep = "")
 ```
 
+
 ```{r, fig.width=10, fig.height = 5, dependson="fig_captions5_multiple", fig.cap = fig.caption.trace.plot.multiple}
-single.mc.result1 = single.mcmc(10000,1000, df.coal$date, 10, t1.initial = 1960, beta.initial = 5, lambda0.initial = 10, lambda1.initial = 10)
-single.mc.result2 = single.mcmc(10000,1000, df.coal$date, 10, t1.initial = 1855, beta.initial = 5, lambda0.initial = 0.1, lambda1.initial = 10)
+single.mc.result1 = single.mcmc(20000,0, df.coal$date, 10, t1.initial = 1960, beta.initial = 5, lambda0.initial = 10, lambda1.initial = 10)
+single.mc.result2 = single.mcmc(20000,0, df.coal$date, 10, t1.initial = 1855, beta.initial = 5, lambda0.initial = 0.1, lambda1.initial = 10)
 
 set.seed(1)
 df.parameters.single.mc.multiple = rbind(single.mc.result1$df.parameters.long, single.mc.result2$df.parameters.long)
@@ -441,16 +439,192 @@ df.parameters.single.mc.multiple$realization = c(rep("1", nrow(single.mc.result1
 # Plot trace plots of each parameter for a single realization of the single site MCMC
 ggplot(df.parameters.single.mc.multiple, aes(x = iter, y = value, col = realization)) + geom_line(alpha = 0.75) +
   facet_wrap(~parameters, scale = "free_y") +
-  
-  geom_vline(aes(xintercept = single.mc.result$K, col = "Cut off point burn in period"), size = 1) +
   theme(legend.position="bottom") + guides(col = guide_legend("Lines")) +
   xlab("Iteration") + ylab("Value") + 
   
   ggtitle("Trace plot of the parameters for two differently chosen initial conditions") +
-  scale_color_manual(values = c("black", "lightblue", "red"), labels = c("Realization 1", "Realization 2", "Cut off point burn in period"))
+  scale_color_manual(values = c("black", "lightblue", "red"), labels = c("Realization 2", "Realization 3", "Cut off point burn in period"))
 ```
 
-In Figure \ref{fig:trace_plot_multiple} we see an example where the burn-in of 1000 iterations is not enough to converge to the posterior distribution. Even though both chains appear to converge to the same distribution, it is not until around iteration 2000 that realization 1 appear to have converged. For the previous iterations it is stuck at a local minima for $t_1$ around 1940. This illustrates the importance of running the MCMC algorithm long enough and from multiple initial conditions to determine if convergence has actually been reached.
+
+??????????????????? should we get rid of the burn-in period for these plots?
+
+In Figure \ref{fig:trace_plot_multiple} we see an example where the burn-in of 1000 iterations is not enough to converge to the posterior distribution. Even though both chains appear to converge to the same distribution, it is not until around iteration 2000 that realization 1 appear to have converged. For the previous iterations it is stuck at a local minima for $t_1$ around 1940. This illustrates the importance of running the MCMC algorithm long enough and from multiple initial conditions to determine if convergence has actually been reached. In the end these two new realizations seem to converge to the same distribution, supporting our belief that we for the first realization reached convergence during our burn-in period.
+
+
+## 6)
+
+For this task we explore how the tuning parameter $d$ influences the length of the burn-in and the mixing properties of the simulated Markov chain. To do this we will run the algorithm fpr several different $d$-values and from three different starting locations. The starting locations will be drawn randomly from the priors, but by setting a seed for each one we will ensure the same three intial values for each $d$-value.
+
+
+```{r multiple_d_function}
+# set the d-values which are to be evaluated. Divide into two list to be able to get output on two pages
+d.values.low = c(1,3,5)
+d.values.high = c(10,20,100)
+# set number of iterations performed
+n = 20000
+K = 0
+# set the different seeds for the initial values. Chosen such that t_1 begins with a low, medium and high value
+seeds = c(12,4,7)
+
+# A function that runs the MCMC single site algorithm and plots. Returns a string to be used as figure caption
+plot.for.mutiple.d = function(n, K, d.values, fig.label) {
+  for (d in d.values) {
+    # set seeds and run for three different initial conditions
+    set.seed(seeds[1])
+    single.mc.test.d.1 = single.mcmc(n,K, df.coal$date, d = d)
+    set.seed(seeds[2])
+    single.mc.test.d.2 = single.mcmc(n,K, df.coal$date, d = d)
+    set.seed(seeds[3])
+    single.mc.test.d.3 = single.mcmc(n,K, df.coal$date, d = d)
+    # Combine the realizations to a single data frame for plotting
+    df.parameters.test.d = rbind(single.mc.test.d.1$df.parameters.long,
+                                    single.mc.test.d.2$df.parameters.long,
+                                    single.mc.test.d.3$df.parameters.long)
+    # add a column that keeps track of which realizaiton the observations belong to
+    df.parameters.test.d$realization = c(rep("1", n + K + 1), rep("2", n + K + 1), rep("3", n + K + 1))
+    # create the plot
+    p = ggplot(df.parameters.test.d, aes(x = iter, y = value, col = realization)) + geom_line(alpha = 0.75) +
+      facet_wrap(~parameters, scale = "free_y", ncol = 4) +
+      theme(legend.position="bottom") + guides(col = guide_legend("Realizations")) +
+      xlab("Iteration") + ylab("Value") +
+  
+      ggtitle(paste("Trace plot of the parameters for three differently chosen",
+                    "initial conditions and d =", d),
+              subtitle = TeX(paste("Average acceptance probability for $t_1$:", 
+                               round((single.mc.test.d.1$percent.t1.accepted +
+                                        single.mc.test.d.2$percent.t1.accepted +
+                                        single.mc.test.d.3$percent.t1.accepted) / 3,
+                                      3)))) +
+      scale_color_manual(values = c("black", "lightblue", "lightgrey"), labels = c("1", "2", "3"))
+    # print the plot
+    print(p)
+  }
+  # create figure caption. Written in a specific format to be able to show everythin in rmarkdown
+fig.caption.d = paste("\\label{", fig.label, "}Trace plot of the parameters for tuning ",
+
+                      "parameter $d \\in [$", toString(d.values.low), "$]$ and three different ",
+                      
+                      "initial conditions. The single site MCMC algorithm was run for ", n, " iterations. ",
+                      
+                      "The initial values for realization 1 were; $t_1^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.1$t1[1],2), ", $\\beta^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.1$beta[1],2) , ", $\\lambda_0^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.1$lambda0[1],2), ", $\\lambda_1^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.1$lambda1[1],2), ". ",
+
+                      "The initial values for realization 2 were; $t_1^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.2$t1[1],2), ", $\\beta^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.2$beta[1],2) , ", $\\lambda_0^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.2$lambda0[1],2), ", $\\lambda_1^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.2$lambda1[1],2), ". ",
+
+                      "The initial values for realization 3 were; $t_1^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.3$t1[1],2), ", $\\beta^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.3$beta[1],2) , ", $\\lambda_0^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.3$lambda0[1],2), ", $\\lambda_1^{\\textrm{initial}} =$ ",
+                      
+                      round(single.mc.test.d.3$lambda1[1],2), ".", sep = "")
+  # return figure caption
+  return(fig.caption.d)
+}
+```
+
+
+```{r, fig.width = 10, fig.height = 3, out.width = "100%", dependson = "multiple_d_function", fig.show = "hold", fig.cap = fig.caption.d.low, eval.after = "fig.cap"}
+# plot for the low d values
+fig.caption.d.low = plot.for.mutiple.d(n, K, d.values.low, fig.label = "fig:trace_plot_low_d")
+```
+
+
+
+```{r fig_caption_d, fig.width = 10, fig.height = 3, out.width="100%", fig.show = "hold", eval.after = "fig.cap", dependson = "multiple_d_function", fig.cap = fig.caption.d.high}
+# plot for the high d values
+fig.caption.d.high = plot.for.mutiple.d(n, K, d.values.high, fig.label = "fig:trace_plot_high_d")
+```
+
+
+From Figure \ref{fig:trace_plot_low_d} we observe that for $d \leq 5$ the algorithm seem to take a lot of time to get out of a local minimas and initial conditions. For $d = 5$ the burn-in period appear to end after 3000 iterations, while for $d = 3$ and $d = 1$ the chains seem to still be in the burn-in period after 20000 iterations. From Figure \ref{fig:trace_plot_high_d} we observe a trend that higher $d$-values result in shorter burn-in periods. For $d = 10$ the burn-in period appear to usually be over in less than or equal to 1000 iterations, while $d = 20$ and $d = 100$ reach convergence even faster. Although convergence is reached faster for higher $d$-values we see that there is a trade-off against acceptance probability where higher $d$ also decreases the effective sample size due to higher correlation. By inspection, our initial choice of $d = 10$ therefore seem to be a reasonable choice with an burn-in period usually around 1000 iterations and an acceptance probability of $t_1$ equal to 0.249. Figure \ref{fig:trace_plot_low_d} and \ref{fig:trace_plot_high_d} support our belief that the limiting distribution is not influenced by the tuning parameter, just how fast it converges.
+
+## 7)
+
+??????????????????????????????????????????????????? Must we write what a single and block MCMC is?
+
+Next we define and implement a block Metropolis–Hastings algorithm for $\pi(\vect \theta | \vect x)$ using the following two block proposals. The first version uses a block proposal for $(t_1, \lambda_0, \lambda_1)$ keeping $\beta$ unchanged. We generate the potential new values $(\tilde t_1, \lambda_0, \lambda_1)$ by first generating $\tilde t_1$ from a normal distribution cented at the current value of $t_1$ and thereafter generate $(\tilde \lambda_0, \tilde \lambda_1)$ from their joint full conditionals inserted the potential new value $\tilde t_1$, i.e $\pi(\lambda_0, \lambda_1 | \vect x, \tilde t_1, \beta)$.
+
+?????????????????????????????????????????++ is lambda0 and lambda 1 independent (joint conditional)
+
+As $\lambda_0$ and $\lambda_1$ are independent given $\beta$ and $t_1$ their joint full conditional is
+
+\begin{align*}
+\pi(\lambda_0, \lambda_1 | \vect x, t_1, \beta)
+&= \pi(\lambda_0 | \vect{x}, t_1, \lambda_1, \beta) \pi(\lambda_1 | \vect{x}, t_1, \lambda_0, \beta) \\
+&\propto \lambda_0^{y_0 + 1} e^{-\lambda_0(t_1 - t_0 + \frac{1}{\beta})}  \lambda_1^{y_1 + 1} e^{-\lambda_1(t_2 - t_1 + \frac{1}{\beta})}, \qquad  \lambda_0 \geq 0, \lambda_1 \geq 0.
+\end{align*}
+
+Using that the joint conditional of $(t_1, \lambda_0, \lambda_1)$ is proportional to the full posterior, we get that their joint full conditional is proportional to
+
+\begin{align*}
+\pi(t_1, \lambda_0, \lambda_1 | \vect x, \beta)
+&= \frac{\pi(\lambda_0, \lambda_1, t_1, \beta | \vect x)}{\pi(\beta | \vect x)}
+\propto \pi(\lambda_0, \lambda_1, t_1, \beta | \vect x) \\
+&\propto e^{-\lambda_0 (t_{1} - t_0) - \lambda_1 (t_{2} - t_1) - \frac{\lambda_0 + \lambda_1 + 1}{\beta}}
+\lambda_0^{y_0 + 1} \lambda_1^{y_1 + 1}, \qquad  \lambda_0 \geq 0, \lambda_1 \geq 0, t_1 \in [t_0, t_2].
+\end{align*}
+
+!!!!!!!!!!!!!!!!!!!! must write acceptance probabilities and proposal functions.
+
+
+```{r}
+#function used to sample a new t1, lambda0 and lambda1 value using a block proposal.
+# First a new t1 is proposed from a normal distribution centered at the current value of t1.
+# Thereafter lambda0 and lambda1 are generated from their joint full conditionals given beta and proposed t1.
+# Lastly the proposals are either accepted or rejected. If rejected, the current values are returned.
+# Implemented on log-form for efficiency and avoiding too large or to small values
+# sigma is a tuning parameter that determines how large steps sizes are usually taken by t1
+sample.block.t1.normal.walk.and.lambdas. = function(t1.prev, lambda0.prev, lambda1.prev, beta, sigma, t0, t2, y.prev, dates) {
+  # get proposal for new t1 value from normal distribution around current value
+  t1.proposal = rnorm(1, mean = 0, sd = sigma)
+  y.proposal = c(sum(dates <= t1.proposal), sum(dates > t1.proposal))
+  # get proposal for lambda0 and lambda1 from joint conditional given t1.proposal and beta
+  lambda0.proposal = sample.lambda0.full.conditional(t1.proposal, beta, t0, y.proposal)
+  lambda1.proposal = sample.lambda1.full.conditional(t1.proposal, beta, t2, y.proposal)
+  
+  # if proposal is outside the allowed range, return the current value of t1, lambda0 and lambda1
+  if (t1.proposal <= t0 | t1.proposal >= t2) return(list(t1 = t1.prev, lambda0 = lambda0.prev, lambda1 = lambda1.prev,
+                                                         y = y.prev, accepted = 0))
+  
+  # function returning the not normalized joint conditional of t1, lambda0 and lambda1 on log-form
+  log.joint.conditional.t1.lambda0.lambda1 = function(t1, lambda0, lambda1, y) {
+    return(- lambda0 * (t1 - t0) - lambda1 * (t2 - t1) - (lambda0 + lambda1 + 1) / beta +
+             (y[1] + 1) * log(lambda0) + (y[2] + 1) * lambda1) 
+  }
+  
+  #calculate acceptance probability
+  accept.prob = min(exp(log.full.conditional.t1(t1.proposal, lambda0.proposal, lambda.proposal, y.proposal) - 
+                          log.full.conditional.t1(t1.prev, lambda0.prev, lambda1.prev, y.prev)), 1)
+  
+  # get a uniform random number between 0 and 1
+  u = runif(1)
+  # Return new propsals if u < acceptance probability
+  if(u < accept.prob) return(list(t1 = t1.proposal, lambda0 = lambda0.proposal, lambda1 = lambda1.proposal,
+                                  y = y.proposal, accepted = 1))
+  #else return current values
+  else return(list(t1 = t1.prev, lambda0 = lambda0.prev, lambda1 = lambda1.prev, y = y.prev, accepted = 0))
+}
+```
+
 
 
 ###########################
@@ -512,3 +686,4 @@ We have that:
 
 Use the grid of $\Theta$ value from point 2) to approximate the integral above for $i = 10$. Compare your approximation
 for $\Pi(\eta_i|y)$ with the estimation obtained in point 1) via Gibbs sampling.
+
