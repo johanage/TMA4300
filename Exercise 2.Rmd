@@ -780,8 +780,14 @@ bound around the mean.
 ```{r}
 gibbs_sampling = function(precision_matrix, pi_f_gtheta, n_samples){
   theta = 1
-  #Q = matrix(nrow = n_samples, ncol = n_samples) denne ble feil
-  # for i for og denne
+  Q = matrix(nrow = n_samples, ncol = n_samples){
+    for(i in 1:n_samples){
+      for(j in 1:n_samples){
+        if()
+      }
+    }
+  }
+
 }
 ```
 
