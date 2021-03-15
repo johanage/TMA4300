@@ -473,7 +473,6 @@ Our main inferential interest lies in the posterior marginal for the smooth effe
 parameters.
 
 
-
 A latent variable model relates a set of observable variables to a set of inferred variables. A latent Gaussian model is a model which infers a variable based on observed variables with that have a Gaussian distribution.
 
 
@@ -484,6 +483,17 @@ Propose a new value for the vector $\eta$ from the full conditional $\Pi(\eta|\T
 Use the samples to get an estimate for the posterior marginal for the hyperparameter $\Pi(\Theta|y)$
 Use the samples to get an estimate of the smooth effect using the mean and pointwise a $95\%$ confidence
 bound around the mean.
+
+
+```{r}
+gibbs_sampling = function(precision_matrix, pi_f_gtheta, n_samples){
+  theta = 1
+  Q = matrix(nrow = n_samples, ncol = n_samples)
+  for i for
+}
+```
+
+
 3. We want to approximate the posterior marginal for the hyperparameter $\Theta, \Pi(\Theta|y)$ using the INLA
 scheme. We start from:
 \begin{equation}
