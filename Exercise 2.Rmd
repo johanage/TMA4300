@@ -593,18 +593,21 @@ Using that the joint conditional of $(t_1, \lambda_0, \lambda_1)$ is proportiona
 # Lastly the proposals are either accepted or rejected. If rejected, the current values are returned.
 # Implemented on log-form for efficiency and avoiding too large or to small values
 # sigma is a tuning parameter that determines how large steps sizes are usually taken by t1
-sample.block.t1.normal.walk.and.lambdas. = function(t1.prev, lambda0.prev, lambda1.prev, beta, sigma, t0, t2, y.prev, dates) {
+sample.block.t1.normal.walk.and.lambdas = function(t1.prev, lambda0.prev, lambda1.prev, beta, sigma, t0, t2, y.prev, dates) {
   # get proposal for new t1 value from normal distribution around current value
-  t1.proposal = rnorm(1, mean = 0, sd = sigma)
+  t1.proposal = rnorm(1, mean = t1.prev, sd = sigma)
+  print(paste(t1.prev, t0, t2, t1.proposal))
+  # if proposal is outside the allowed range, return the current value of t1, lambda0 and lambda1
+  if (t1.proposal <= t0 | t1.proposal >= t2) return(list(t1 = t1.prev, lambda0 = lambda0.prev, lambda1 = lambda1.prev,
+                                                         y = y.prev, accepted = 0))
+
+  # find new y for given t1 propsal
   y.proposal = c(sum(dates <= t1.proposal), sum(dates > t1.proposal))
   # get proposal for lambda0 and lambda1 from joint conditional given t1.proposal and beta
   lambda0.proposal = sample.lambda0.full.conditional(t1.proposal, beta, t0, y.proposal)
   lambda1.proposal = sample.lambda1.full.conditional(t1.proposal, beta, t2, y.proposal)
   
-  # if proposal is outside the allowed range, return the current value of t1, lambda0 and lambda1
-  if (t1.proposal <= t0 | t1.proposal >= t2) return(list(t1 = t1.prev, lambda0 = lambda0.prev, lambda1 = lambda1.prev,
-                                                         y = y.prev, accepted = 0))
-  
+
   # function returning the not normalized joint conditional of t1, lambda0 and lambda1 on log-form
   log.joint.conditional.t1.lambda0.lambda1 = function(t1, lambda0, lambda1, y) {
     return(- lambda0 * (t1 - t0) - lambda1 * (t2 - t1) - (lambda0 + lambda1 + 1) / beta +
@@ -612,9 +615,9 @@ sample.block.t1.normal.walk.and.lambdas. = function(t1.prev, lambda0.prev, lambd
   }
   
   #calculate acceptance probability
-  accept.prob = min(exp(log.full.conditional.t1(t1.proposal, lambda0.proposal, lambda.proposal, y.proposal) - 
-                          log.full.conditional.t1(t1.prev, lambda0.prev, lambda1.prev, y.prev)), 1)
-  
+  accept.prob = min(exp(log.joint.conditional.t1.lambda0.lambda1(t1.proposal, lambda0.proposal, lambda1.proposal, y.proposal) - 
+                          log.joint.conditional.t1.lambda0.lambda1(t1.prev, lambda0.prev, lambda1.prev, y.prev)), 1)
+  print(accept.prob)
   # get a uniform random number between 0 and 1
   u = runif(1)
   # Return new propsals if u < acceptance probability
@@ -623,7 +626,122 @@ sample.block.t1.normal.walk.and.lambdas. = function(t1.prev, lambda0.prev, lambd
   #else return current values
   else return(list(t1 = t1.prev, lambda0 = lambda0.prev, lambda1 = lambda1.prev, y = y.prev, accepted = 0))
 }
+
+df = block.mcmc(n, K, df.coal$date, sigma, block.proposal = "t1.lambda0.lambda1")
+plot(df$iter, df$t1, type ="l")
+df$t1
 ```
+
+```{r}
+# Implements a block mcmc formula for approximating the posterior distribution of the parameters of interest
+block.mcmc = function(n, K, dates, sigma, 
+                      t1.initial = runif(1, dates[1], dates[length(dates)]),
+                      beta.initial = 1 / rgamma(1, shape = 2, rate = 1),
+                      lambda0.initial = 1 / rgamma(1, shape = 3, scale = beta.initial),
+                      lambda1.initial = 1 / rgamma(1, shape = 3, scale = beta.initial),
+                      block.proposal = "t1.lambda0.lambda1") {
+  "
+  Input:
+    -n: number of useful samples after the burn-in period wanted
+    -K: length of the burn-in period
+    -dates: the dates of the explosions (+ start and end date)
+    -d: the maximum step length for the uniform random walk of t1
+    -t1.initial: the initial value of t1. If not provided it is sampled from the prior
+    -beta.initial: the initial value of beta. If not provided it is sampled from the prior
+    -lambda0.initial: the initial value of lambda0. If not provided it is sampled from the
+    prior given beta.initial
+    -lambda1.initial: the initial value of lambda1. If not provided it is sampled from the
+    prior given beta.initial
+    -blokc.proposal: which block proposal is to be used in the algorithm
+    
+  Output:
+    -A list containing
+      -- t1: a vector of sampled t1 values
+      -- beta: a vector of sampled beta values
+      -- lambda0: a vector of sampled lambda0 values
+      -- lambda1: a vector of sampled lambda1 values
+      -- iter = iter
+      -- df.parameters: a data frame containing all of the vectors above as columns in
+      addition to a column with boolean value of TRUE if the observation is a part of the
+      burn-in period
+      -- df.parameters.long: a data frame with the same info as df.parameters, but in long-format
+      -- n: number of useful samples after the burn-in period wanted
+      -- K: length of the burn-in period
+      -- d: the maximum step length for the uniform random walk of t1
+      -- percent.t1.accepted: the percent of proposed t1 values accepted
+  "
+  
+  K = K + 1 # to make space for initial values
+  t0 = dates[1] # extract start date
+  t2 = dates[length(dates)] # extract end date
+  date.explosions = dates[2:(length(dates) - 1)] # remove start and end date
+  # Create vectors to store values
+  t1.values = rep(NA, n+K)
+  lambda0.values = rep(NA, n+K)
+  lambda1.values = rep(NA, n+K)
+  beta.values = rep(NA, n+K)
+  
+  # Add initial values
+  t1.values[1] = t1.initial
+  lambda0.values[1] = lambda0.initial
+  lambda1.values[1] = lambda1.initial
+  beta.values[1] = beta.initial
+  
+  # create y containing y0 and y1
+  y = c(sum(date.explosions <= t1.initial), sum(date.explosions > t1.initial)) 
+  
+  n.accepted.block = 0 # keep track of number of accepted block proposals
+  n.accepted.t1 = 0 # keep track of number of accepted t1 proposals (if applicable)
+  for (i in 2:(n+K)) {
+    if (block.proposal == "t1.lambda0.lambda1") {
+      # sample new beta value from full conditional distribution
+      beta.values[i] = sample.beta.full.conditional(lambda0.values[i-1], lambda1.values[i-1])
+      
+      # simulate new t1, lambda0 and lambda1 value. Get corresponding new y value
+      new.block.variables = 
+        sample.block.t1.normal.walk.and.lambdas(t1.values[i-1], lambda0.values[i-1], lambda1.values[i-1],
+                                                beta.values[i], sigma, t0, t2, y, dates)
+      t1.values[i] = new.block.variables$t1
+      lambda0.values[i] = new.block.variables$lambda0
+      lambda1.values[i] = new.block.variables$lambda1
+      y = new.block.variables$y
+      # keep track of number of accepted block proposals
+      n.accepted.block = n.accepted.block + new.block.variables$accepted
+      n.accepted.t1 = NA # not applicable as t1 is included in block sampling
+    }
+  }
+  
+  # Create a vector with the iteration numbers. The initial values correspond to iteration 0.
+  iter = c(seq(0, n+K-1))
+  
+  # Add parameter values and other interesting information to a data frame
+  df.parameters = data.frame(iter = iter, t1 = t1.values, beta = beta.values, lambda0 = lambda0.values,
+                             lambda1 = lambda1.values, burn.in = c(rep(TRUE, K), rep(FALSE, n)))
+  
+  # make the same dataframe on long format
+  df.parameters.long = pivot_longer(df.parameters, c(-iter, -burn.in), names_to = "parameters", values_to = "value")
+  
+  # return everything of interest in a list for easy access
+  return(list(t1 = t1.values, beta = beta.values, lambda0 = lambda0.values, lambda1 = lambda1.values,
+              df.parameters = df.parameters, df.parameters.long = df.parameters.long,
+              n = n, K = K-1, d = d, iter = iter, 
+              percent.t1.accepted = n.accepted.t1 / (n + K - 1),
+              percent.block.accepted = n.accepted.block / (n + K -1)))
+}
+```
+
+
+```{r}
+n = 10
+K = 0
+sigma = 3
+df = block.mcmc(n, K, df.coal$date, sigma, block.proposal = "t1.lambda0.lambda1")
+plot(df$iter, df$t1, type ="l")
+df$t1
+```
+
+
+
 
 
 
