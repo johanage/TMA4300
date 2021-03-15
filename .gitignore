@@ -47,4 +47,8 @@ vignettes/*.pdf
 # R package: bookdown caching files
 /*_files/
 
+# Don't upload aux and out files
+.aux
+.out
+
 # End of https://www.toptal.com/developers/gitignore/api/r
