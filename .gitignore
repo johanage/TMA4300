@@ -48,8 +48,9 @@ vignettes/*.pdf
 /*_files/
 
 # Don't upload aux and out files
-.aux
-.out
-.pdf
+*.aux
+*.out
+*.pdf
+*.html
 
 # End of https://www.toptal.com/developers/gitignore/api/r
